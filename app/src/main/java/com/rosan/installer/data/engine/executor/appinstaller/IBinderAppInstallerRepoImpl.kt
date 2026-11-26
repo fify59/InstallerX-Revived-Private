@@ -181,7 +181,7 @@ abstract class IBinderAppInstallerRepoImpl(
         val enableAbiOverride = appSettingsRepo.getBoolean(BooleanSetting.LabEnableAbiOverride).first()
         val tryDifferentArchitecture = enableAbiOverride &&
             appSettingsRepo.getBoolean(BooleanSetting.LabTryDifferentArchitecture).first()
-        
+
         // Initialize APK signer if enabled
         val apkSigner = InstallApkSigner(context)
         val enableSigning = config.enableApkSigning
@@ -189,7 +189,7 @@ abstract class IBinderAppInstallerRepoImpl(
             v1 = config.signingV1Scheme,
             v2 = config.signingV2Scheme,
             v3 = config.signingV3Scheme,
-            v4 = config.signingV4Scheme
+            v4 = config.signingV4Scheme,
         )
         if (enableSigning) {
             try {
@@ -199,7 +199,7 @@ abstract class IBinderAppInstallerRepoImpl(
                 throw InstallException(InstallErrorType.UNKNOWN, "Failed to initialize APK signer: ${e.message}")
             }
         }
-        
+
         onPhaseChanged(InstallPhase.WRITING)
         val totalBytes = InstallProgressWriter.totalBytesOrNull(entities.map { it.data.getSize() })
         val progressWriter = totalBytes?.let {
@@ -332,7 +332,13 @@ abstract class IBinderAppInstallerRepoImpl(
             session = createdSession.second
             platformSessionId = createdSession.first
             metadata.onPlatformSessionActiveChanged(createdSession.first, true)
-            installIts(entities, session, progressWriter, apkSigner, enableSigning)
+            installIts(
+                entities,
+                session,
+                progressWriter,
+                apkSigner,
+                enableSigning,
+            )
             onPhaseChanged(InstallPhase.INSTALLING)
             commit(config, createdSession.first, session)
         } catch (e: Exception) {
@@ -434,11 +440,11 @@ abstract class IBinderAppInstallerRepoImpl(
     }
 
     private suspend fun installIts(
-        entities: List<InstallEntity>, 
-        session: Session, 
+        entities: List<InstallEntity>,
+        session: Session,
         progressWriter: InstallProgressWriter?,
         apkSigner: InstallApkSigner,
-        enableSigning: Boolean
+        enableSigning: Boolean,
     ) {
         val sessionTotalBytes = progressWriter?.let {
             InstallProgressWriter.totalBytes(entities.map { entity -> entity.data.getSize() })
@@ -448,7 +454,13 @@ abstract class IBinderAppInstallerRepoImpl(
             sessionTotalBytes?.let { updateStagingProgress(session, 0f) } ?: false
 
         for (entity in entities) {
-            installIt(entity, session, progressWriter, apkSigner, enableSigning) { entityBytes ->
+            installIt(
+                entity,
+                session,
+                progressWriter,
+                apkSigner,
+                enableSigning,
+            ) { entityBytes ->
                 val total = checkNotNull(sessionTotalBytes)
                 val sessionProgress =
                     (sessionCompletedBytes + entityBytes).toDouble() / total.toDouble()
@@ -494,14 +506,14 @@ abstract class IBinderAppInstallerRepoImpl(
                 }
                 else -> throw IllegalStateException("Unsupported data entity type for signing: ${sourceFile.javaClass.simpleName}")
             }
-            
+
             // Sign the APK
             apkSigner.maybeSignApk(inputFile, true)
         } else {
             entity.data.getInstallInputStreamWhileNotEmpty()
                 ?: throw IllegalStateException("Unable to open install entity input stream: ${entity.data}")
         }
-        
+
         inputStream.use { input ->
             session.openWrite(
                 entity.name,
