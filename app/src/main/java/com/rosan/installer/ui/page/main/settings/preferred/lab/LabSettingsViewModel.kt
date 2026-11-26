@@ -29,6 +29,13 @@ class LabSettingsViewModel(appSettingsRepo: AppSettingsRepository, private val u
             labTryDifferentArchitecture = prefs.labTryDifferentArchitecture,
             tryMultipleAuthorizersOnInstall = prefs.tryMultipleAuthorizersOnInstall,
             smartAuthorizerCandidates = prefs.smartAuthorizerCandidates,
+            // APK Signing settings
+            labEnableApkSigning = prefs.labEnableApkSigning,
+            labSigningV1Scheme = prefs.labSigningV1Scheme,
+            labSigningV2Scheme = prefs.labSigningV2Scheme,
+            labSigningV3Scheme = prefs.labSigningV3Scheme,
+            labSigningV4Scheme = prefs.labSigningV4Scheme,
+            labSigningZipAlign = prefs.labSigningZipAlign,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -102,6 +109,49 @@ class LabSettingsViewModel(appSettingsRepo: AppSettingsRepository, private val u
                 updateSetting(
                     StringSetting.SmartAuthorizerCandidates,
                     SmartAuthorizerPreferences.encode(action.candidates),
+                )
+            }
+
+            // APK Signing actions
+            is LabSettingsAction.LabChangeEnableApkSigning -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabEnableApkSigning,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV1Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV1Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV2Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV2Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV3Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV3Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV4Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV4Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningZipAlign -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningZipAlign,
+                    action.enable,
                 )
             }
         }

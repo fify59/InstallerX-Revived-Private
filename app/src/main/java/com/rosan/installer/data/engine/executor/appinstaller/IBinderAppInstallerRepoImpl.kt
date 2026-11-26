@@ -29,6 +29,9 @@ import com.rosan.installer.core.reflection.ReflectionProvider
 import com.rosan.installer.core.reflection.getValue
 import com.rosan.installer.data.engine.executor.PackageInstallerUtil.abiOverride
 import com.rosan.installer.data.engine.executor.PackageInstallerUtil.installFlags
+import com.rosan.installer.data.engine.signature.ApkSigner
+import com.rosan.installer.data.engine.signature.InstallApkSigner
+import com.rosan.installer.data.engine.signature.SigSchemes
 import com.rosan.installer.data.engine.executor.PackageManagerUtil
 import com.rosan.installer.domain.device.provider.DeviceCapabilityProvider
 import com.rosan.installer.domain.engine.exception.InstallException
@@ -178,6 +181,25 @@ abstract class IBinderAppInstallerRepoImpl(
         val enableAbiOverride = appSettingsRepo.getBoolean(BooleanSetting.LabEnableAbiOverride).first()
         val tryDifferentArchitecture = enableAbiOverride &&
             appSettingsRepo.getBoolean(BooleanSetting.LabTryDifferentArchitecture).first()
+        
+        // Initialize APK signer if enabled
+        val apkSigner = InstallApkSigner(context)
+        val enableSigning = config.enableApkSigning
+        val sigSchemes = SigSchemes(
+            v1 = config.signingV1Scheme,
+            v2 = config.signingV2Scheme,
+            v3 = config.signingV3Scheme,
+            v4 = config.signingV4Scheme
+        )
+        if (enableSigning) {
+            try {
+                apkSigner.initialize(sigSchemes, config.signingZipAlign)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to initialize APK signer")
+                throw InstallException(InstallErrorType.UNKNOWN, "Failed to initialize APK signer: ${e.message}")
+            }
+        }
+        
         onPhaseChanged(InstallPhase.WRITING)
         val totalBytes = InstallProgressWriter.totalBytesOrNull(entities.map { it.data.getSize() })
         val progressWriter = totalBytes?.let {
@@ -199,6 +221,8 @@ abstract class IBinderAppInstallerRepoImpl(
                     sharedUserIdExemption,
                     progressWriter,
                     onPhaseChanged,
+                    apkSigner,
+                    enableSigning,
                 )
             }
         }
@@ -262,6 +286,8 @@ abstract class IBinderAppInstallerRepoImpl(
         sharedUserIdExemption: List<String>,
         progressWriter: InstallProgressWriter?,
         onPhaseChanged: suspend (InstallPhase) -> Unit,
+        apkSigner: InstallApkSigner,
+        enableSigning: Boolean,
     ) {
         if (!config.bypassBlacklistInstallSetByUser) {
             // Blacklisted package names
@@ -306,7 +332,7 @@ abstract class IBinderAppInstallerRepoImpl(
             session = createdSession.second
             platformSessionId = createdSession.first
             metadata.onPlatformSessionActiveChanged(createdSession.first, true)
-            installIts(entities, session, progressWriter)
+            installIts(entities, session, progressWriter, apkSigner, enableSigning)
             onPhaseChanged(InstallPhase.INSTALLING)
             commit(config, createdSession.first, session)
         } catch (e: Exception) {
@@ -407,7 +433,13 @@ abstract class IBinderAppInstallerRepoImpl(
         return sessionId to session
     }
 
-    private suspend fun installIts(entities: List<InstallEntity>, session: Session, progressWriter: InstallProgressWriter?) {
+    private suspend fun installIts(
+        entities: List<InstallEntity>, 
+        session: Session, 
+        progressWriter: InstallProgressWriter?,
+        apkSigner: InstallApkSigner,
+        enableSigning: Boolean
+    ) {
         val sessionTotalBytes = progressWriter?.let {
             InstallProgressWriter.totalBytes(entities.map { entity -> entity.data.getSize() })
         }
@@ -416,7 +448,7 @@ abstract class IBinderAppInstallerRepoImpl(
             sessionTotalBytes?.let { updateStagingProgress(session, 0f) } ?: false
 
         for (entity in entities) {
-            installIt(entity, session, progressWriter) { entityBytes ->
+            installIt(entity, session, progressWriter, apkSigner, enableSigning) { entityBytes ->
                 val total = checkNotNull(sessionTotalBytes)
                 val sessionProgress =
                     (sessionCompletedBytes + entityBytes).toDouble() / total.toDouble()
@@ -434,6 +466,8 @@ abstract class IBinderAppInstallerRepoImpl(
         entity: InstallEntity,
         session: Session,
         progressWriter: InstallProgressWriter?,
+        apkSigner: InstallApkSigner,
+        enableSigning: Boolean,
         onEntryProgress: (Long) -> Unit,
     ) {
         Timber.d("Installing entity: ${entity.name}, data path: ${entity.data}, top source: ${entity.data.getSourceTop()}")
@@ -443,8 +477,31 @@ abstract class IBinderAppInstallerRepoImpl(
             throw IllegalStateException("Invalid data size: $sizeBytes.")
         }
 
-        val inputStream = entity.data.getInstallInputStreamWhileNotEmpty()
-            ?: throw IllegalStateException("Unable to open install entity input stream: ${entity.data}")
+        // Get the input stream, potentially signed
+        val inputStream = if (enableSigning) {
+            val sourceFile = entity.data.getSourceTop()
+            val inputFile = when (sourceFile) {
+                is com.rosan.installer.domain.engine.model.source.DataEntity.FileEntity -> java.io.File(sourceFile.path)
+                is com.rosan.installer.domain.engine.model.source.DataEntity.FileDescriptorEntity -> {
+                    // For FileDescriptorEntity, we need to materialize to a file first
+                    val tempFile = java.io.File(context.cacheDir, "temp_${entity.name}")
+                    sourceFile.getInstallInputStream()?.use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    tempFile
+                }
+                else -> throw IllegalStateException("Unsupported data entity type for signing: ${sourceFile.javaClass.simpleName}")
+            }
+            
+            // Sign the APK
+            apkSigner.maybeSignApk(inputFile, true)
+        } else {
+            entity.data.getInstallInputStreamWhileNotEmpty()
+                ?: throw IllegalStateException("Unable to open install entity input stream: ${entity.data}")
+        }
+        
         inputStream.use { input ->
             session.openWrite(
                 entity.name,

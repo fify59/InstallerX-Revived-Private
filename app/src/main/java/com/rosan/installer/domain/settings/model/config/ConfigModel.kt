@@ -46,6 +46,13 @@ data class ConfigModel(
     val splitChooseAll: Boolean = false,
     val apkChooseAll: Boolean = false,
     val requireBiometricAuth: Boolean = false,
+    // APK Signing fields
+    val enableApkSigning: Boolean = false,
+    val signingV1Scheme: Boolean = true,
+    val signingV2Scheme: Boolean = true,
+    val signingV3Scheme: Boolean = true,
+    val signingV4Scheme: Boolean = false,
+    val signingZipAlign: Boolean = true,
 
     val createdAt: Long = System.currentTimeMillis(),
     val modifiedAt: Long = System.currentTimeMillis(),
@@ -100,6 +107,12 @@ data class ConfigModel(
             apkChooseAll = false,
             allowSigMismatch = true,
             allowSigUnknown = true,
+            enableApkSigning = false,
+            signingV1Scheme = true,
+            signingV2Scheme = true,
+            signingV3Scheme = true,
+            signingV4Scheme = false,
+            signingZipAlign = true,
         )
 
         val XiaomiDefault = ConfigModel(
@@ -135,6 +148,12 @@ data class ConfigModel(
             apkChooseAll = false,
             allowSigMismatch = true,
             allowSigUnknown = true,
+            enableApkSigning = false,
+            signingV1Scheme = true,
+            signingV2Scheme = true,
+            signingV3Scheme = true,
+            signingV4Scheme = false,
+            signingZipAlign = true,
         )
 
         fun generateOptimalDefault(): ConfigModel = when (DeviceConfig.currentManufacturer) {
