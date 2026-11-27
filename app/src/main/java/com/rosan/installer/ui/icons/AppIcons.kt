@@ -246,5 +246,4 @@ object AppIcons {
     val InstallRequester = Icons.AutoMirrored.TwoTone.FactCheck
     val Sign = Icons.TwoTone.Security
     val Import = Icons.TwoTone.CloudDownload
-    val Delete = Icons.TwoTone.Delete
 }
