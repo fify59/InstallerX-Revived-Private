@@ -117,7 +117,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     privateKeyFile = privateKeyFile,
                     certificateFile = certificateFile,
                     alias = "installerx_apk_signing_key",
-                    password = null
+                    password = null,
                 )
                 importAlias = "installerx_apk_signing_key"
                 importPassword = ""
