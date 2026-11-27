@@ -137,6 +137,23 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
             pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert", "application/octet-stream"))
         }
     }
+    val pickPkcs12 = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            val pkcs12File = copyUriToCacheFile(context, it, "keystore")
+            if (pkcs12File != null) {
+                pendingImportAction = LabSettingsAction.LabImportPkcs12(
+                    pkcs12File = pkcs12File,
+                    password = "",
+                    alias = "installerx_apk_signing_key",
+                )
+                importAlias = "installerx_apk_signing_key"
+                importPassword = ""
+                showImportPkcs12Dialog = true
+            } else {
+                context.toast(R.string.lab_signing_key_import_failed, "Failed to read file")
+            }
+        }
+    }
 
     if (showNonAdbConfirmation) {
         AlertDialog(
@@ -456,23 +473,6 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                             title = stringResource(R.string.lab_import_pkcs12),
                             description = stringResource(R.string.lab_import_pkcs12_desc),
                             onClick = {
-                                val pickPkcs12 = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-                                    uri?.let {
-                                        val pkcs12File = copyUriToCacheFile(context, it, "keystore")
-                                        if (pkcs12File != null) {
-                                            pendingImportAction = LabSettingsAction.LabImportPkcs12(
-                                                pkcs12File = pkcs12File,
-                                                password = "",
-                                                alias = "installerx_apk_signing_key",
-                                            )
-                                            importAlias = "installerx_apk_signing_key"
-                                            importPassword = ""
-                                            showImportPkcs12Dialog = true
-                                        } else {
-                                            context.toast(R.string.lab_signing_key_import_failed, "Failed to read file")
-                                        }
-                                    }
-                                }
                                 pickPkcs12.launch(arrayOf("application/x-pkcs12", "application/pkcs12", "application/octet-stream"))
                             },
                         ) {}
