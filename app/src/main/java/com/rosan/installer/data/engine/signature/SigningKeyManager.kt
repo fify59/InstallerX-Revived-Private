@@ -19,7 +19,6 @@ import java.security.PrivateKey
 import java.security.SecureRandom
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.security.spec.EncryptedPrivateKeyInfo
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Date
 import javax.security.auth.x500.X500Principal
@@ -195,15 +194,23 @@ object SigningKeyManager {
 
         val keyFactory = KeyFactory.getInstance("RSA")
 
-        // Try to read as encrypted PKCS#8 if password provided
+        // Try to read as encrypted PKCS#8 if password provided (using reflection to avoid import issues)
         if (password != null && password.isNotEmpty()) {
             try {
-                val pkcs8Spec = java.security.spec.EncryptedPrivateKeyInfo(decoded)
-                val cipher = javax.crypto.Cipher.getInstance(pkcs8Spec.getAlgName())
-                val key = javax.crypto.SecretKeyFactory.getInstance(pkcs8Spec.getAlgName())
+                val encryptedPkcs8Class = Class.forName("java.security.spec.EncryptedPrivateKeyInfo")
+                val pkcs8Spec = encryptedPkcs8Class.getConstructor(byteArray::class.java).newInstance(decoded)
+                val algName = encryptedPkcs8Class.getMethod("getAlgName").invoke(pkcs8Spec) as String
+                val cipher = javax.crypto.Cipher.getInstance(algName)
+                val key = javax.crypto.SecretKeyFactory.getInstance(algName)
                     .generateSecret(javax.crypto.spec.PBEKeySpec(password.toCharArray()))
-                cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key, pkcs8Spec.getAlgParameters())
-                val decrypted = cipher.doFinal(pkcs8Spec.getEncryptedData())
+                val algParams = encryptedPkcs8Class.getMethod("getAlgParameters").invoke(pkcs8Spec)
+                val cipherInstance = cipher
+                cipherInstance.init(javax.crypto.Cipher.DECRYPT_MODE, 
+                    javax.crypto.SecretKeyFactory.getInstance(algName)
+                        .generateSecret(javax.crypto.spec.PBEKeySpec(password.toCharArray())),
+                    algParams as java.security.spec.AlgorithmParameters)
+                val encryptedData = encryptedPkcs8Class.getMethod("getEncryptedData").invoke(pkcs8Spec) as ByteArray
+                val decrypted = cipherInstance.doFinal(encryptedData)
                 val keySpec = PKCS8EncodedKeySpec(decrypted)
                 return keyFactory.generatePrivate(keySpec)
             } catch (e: Exception) {

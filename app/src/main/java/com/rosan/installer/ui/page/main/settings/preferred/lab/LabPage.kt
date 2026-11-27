@@ -103,6 +103,9 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     var importPassword by remember { mutableStateOf("") }
     var pendingImportAction by remember { mutableStateOf<LabSettingsAction?>(null) }
 
+    // Check if custom key is imported (read once and memoize)
+    val hasCustomKey by remember { mutableStateOf(SigningKeyManager.hasCustomKey()) }
+
     // File pickers for importing signing key
     var privateKeyUri by remember { mutableStateOf<android.net.Uri?>(null) }
     // Define pickCertificate first so it can be used in pickPrivateKey
