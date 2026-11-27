@@ -83,19 +83,25 @@ abstract class IBinderAppInstallerRepoImpl(
 
     override suspend fun resolveInstallerPackageName(config: ConfigModel): String = when (config.authorizer) {
         Authorizer.Dhizuku -> getDhizukuComponentName()
+
         Authorizer.None if (!capabilityProvider.isSystemApp) -> BuildConfig.APPLICATION_ID
+
         else -> config.resolveConfiguredInstallerPackageName()
     }
 
     private suspend fun resolvePackageInstallerCallerPackageName(config: ConfigModel): String = when (config.authorizer) {
         Authorizer.Dhizuku -> getDhizukuComponentName()
+
         Authorizer.None -> if (capabilityProvider.isSystemApp) context.packageName else BuildConfig.APPLICATION_ID
+
         else -> config.resolveConfiguredInstallerPackageName()
     }
 
     private fun ConfigModel.resolveConfiguredInstallerPackageName(): String = when (installerMode) {
         InstallerMode.Self -> BuildConfig.APPLICATION_ID
+
         InstallerMode.Initiator -> initiatorPackageName ?: BuildConfig.APPLICATION_ID
+
         InstallerMode.Custom -> installer ?: BuildConfig.APPLICATION_ID
     }
 
@@ -254,6 +260,7 @@ abstract class IBinderAppInstallerRepoImpl(
         val versionedPackage = VersionedPackage(packageName, PackageManager.VERSION_CODE_HIGHEST)
         val callerPackageName = when (config.authorizer) {
             Authorizer.Dhizuku -> getDhizukuComponentName()
+
             else -> context.packageName
         }
 
@@ -373,7 +380,9 @@ abstract class IBinderAppInstallerRepoImpl(
             PackageInstaller.SessionParams(
                 when (entities.count { it.name == "base.apk" }) {
                     1 -> PackageInstaller.SessionParams.MODE_FULL_INSTALL
+
                     0 -> PackageInstaller.SessionParams.MODE_INHERIT_EXISTING
+
                     else -> throw IllegalArgumentException("Multiple base APK entries in a single install session")
                 },
             )
@@ -494,6 +503,7 @@ abstract class IBinderAppInstallerRepoImpl(
             val sourceFile = entity.data.getSourceTop()
             val inputFile = when (sourceFile) {
                 is com.rosan.installer.domain.engine.model.source.DataEntity.FileEntity -> java.io.File(sourceFile.path)
+
                 is com.rosan.installer.domain.engine.model.source.DataEntity.FileDescriptorEntity -> {
                     // For FileDescriptorEntity, we need to materialize to a file first
                     val tempFile = java.io.File(context.cacheDir, "temp_${entity.name}")
@@ -504,6 +514,7 @@ abstract class IBinderAppInstallerRepoImpl(
                     }
                     tempFile
                 }
+
                 else -> throw IllegalStateException("Unsupported data entity type for signing: ${sourceFile.javaClass.simpleName}")
             }
 
@@ -601,7 +612,9 @@ internal fun resolveSessionAbiOverride(
     if (!eligibleSource) return null
     val architecture = when (baseArchitecture) {
         null, Architecture.NONE -> return null
+
         Architecture.UNKNOWN -> Architecture.ARM
+
         else -> baseArchitecture
     }
     if (!tryDifferentArchitecture && !architecture.isSameFamilyAs(deviceArchitecture)) return null
