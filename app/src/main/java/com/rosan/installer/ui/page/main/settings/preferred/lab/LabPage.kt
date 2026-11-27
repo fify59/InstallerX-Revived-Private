@@ -311,6 +311,91 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     }
                 }
             }
+            // APK Signing section
+            item {
+                SegmentedColumn(
+                    title = stringResource(R.string.lab_apk_signing),
+                ) {
+                    item {
+                        SwitchWidget(
+                            icon = AppIcons.Security,
+                            title = stringResource(R.string.lab_enable_apk_signing),
+                            description = stringResource(R.string.lab_enable_apk_signing_desc),
+                            checked = uiState.labEnableApkSigning,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeEnableApkSigning(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Security,
+                            title = stringResource(R.string.lab_signing_v1_scheme),
+                            description = stringResource(R.string.lab_signing_v1_scheme_desc),
+                            checked = uiState.labSigningV1Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV1Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Security,
+                            title = stringResource(R.string.lab_signing_v2_scheme),
+                            description = stringResource(R.string.lab_signing_v2_scheme_desc),
+                            checked = uiState.labSigningV2Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV2Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Security,
+                            title = stringResource(R.string.lab_signing_v3_scheme),
+                            description = stringResource(R.string.lab_signing_v3_scheme_desc),
+                            checked = uiState.labSigningV3Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV3Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Security,
+                            title = stringResource(R.string.lab_signing_v4_scheme),
+                            description = stringResource(R.string.lab_signing_v4_scheme_desc),
+                            checked = uiState.labSigningV4Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV4Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Security,
+                            title = stringResource(R.string.lab_signing_zip_align),
+                            description = stringResource(R.string.lab_signing_zip_align_desc),
+                            checked = uiState.labSigningZipAlign,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningZipAlign(it),
+                                )
+                            },
+                        )
+                    }
+                }
+            }
         }
     }
 
