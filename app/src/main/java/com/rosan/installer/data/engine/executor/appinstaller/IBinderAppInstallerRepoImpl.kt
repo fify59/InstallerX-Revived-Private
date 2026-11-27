@@ -183,21 +183,24 @@ abstract class IBinderAppInstallerRepoImpl(
             appSettingsRepo.getBoolean(BooleanSetting.LabTryDifferentArchitecture).first()
 
         // Initialize APK signer if enabled
-        val apkSigner = InstallApkSigner(context)
         val enableSigning = config.enableApkSigning
-        val sigSchemes = SigSchemes(
-            v1 = config.signingV1Scheme,
-            v2 = config.signingV2Scheme,
-            v3 = config.signingV3Scheme,
-            v4 = config.signingV4Scheme,
-        )
-        if (enableSigning) {
+        val apkSigner: InstallApkSigner? = if (enableSigning) {
+            val signer = InstallApkSigner(context)
+            val sigSchemes = SigSchemes(
+                v1 = config.signingV1Scheme,
+                v2 = config.signingV2Scheme,
+                v3 = config.signingV3Scheme,
+                v4 = config.signingV4Scheme,
+            )
             try {
-                apkSigner.initialize(sigSchemes, config.signingZipAlign)
+                signer.initialize(sigSchemes, config.signingZipAlign)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to initialize APK signer")
                 throw InstallException(InstallErrorType.UNKNOWN, "Failed to initialize APK signer: ${e.message}")
             }
+            signer
+        } else {
+            null
         }
 
         onPhaseChanged(InstallPhase.WRITING)
@@ -286,7 +289,7 @@ abstract class IBinderAppInstallerRepoImpl(
         sharedUserIdExemption: List<String>,
         progressWriter: InstallProgressWriter?,
         onPhaseChanged: suspend (InstallPhase) -> Unit,
-        apkSigner: InstallApkSigner,
+        apkSigner: InstallApkSigner?,
         enableSigning: Boolean,
     ) {
         if (!config.bypassBlacklistInstallSetByUser) {
@@ -443,7 +446,7 @@ abstract class IBinderAppInstallerRepoImpl(
         entities: List<InstallEntity>,
         session: Session,
         progressWriter: InstallProgressWriter?,
-        apkSigner: InstallApkSigner,
+        apkSigner: InstallApkSigner?,
         enableSigning: Boolean,
     ) {
         val sessionTotalBytes = progressWriter?.let {
@@ -478,7 +481,7 @@ abstract class IBinderAppInstallerRepoImpl(
         entity: InstallEntity,
         session: Session,
         progressWriter: InstallProgressWriter?,
-        apkSigner: InstallApkSigner,
+        apkSigner: InstallApkSigner?,
         enableSigning: Boolean,
         onEntryProgress: (Long) -> Unit,
     ) {
@@ -490,7 +493,7 @@ abstract class IBinderAppInstallerRepoImpl(
         }
 
         // Get the input stream, potentially signed
-        val inputStream = if (enableSigning) {
+        val inputStream: java.io.InputStream = if (enableSigning && apkSigner != null) {
             val sourceFile = entity.data.getSourceTop()
             val inputFile = when (sourceFile) {
                 is com.rosan.installer.domain.engine.model.source.DataEntity.FileEntity -> java.io.File(sourceFile.path)
@@ -510,7 +513,8 @@ abstract class IBinderAppInstallerRepoImpl(
             }
 
             // Sign the APK
-            apkSigner.maybeSignApk(inputFile, true)
+            val signedFile = apkSigner.maybeSignApk(inputFile, true)
+            signedFile.inputStream()
         } else {
             entity.data.getInstallInputStreamWhileNotEmpty()
                 ?: throw IllegalStateException("Unable to open install entity input stream: ${entity.data}")

@@ -37,16 +37,17 @@ data class SignResult(
 )
 
 /**
- * Signs APK files using Android's ApkSigner (apksig library).
- * Supports v1 (JAR), v2 (APK Signature Scheme v2), v3, and v4 signing.
+ * Wrapper around Android's ApkSigner for signing APKs.
  */
-class ApkSigner(
+class ApkSignerWrapper(
     private val privateKey: PrivateKey,
     private val certificate: X509Certificate,
     private val schemes: SigSchemes = SigSchemes.DEFAULT,
-    private val zipAlign: Boolean = true,
+    private val zipAlign: Boolean = true
 ) {
-    private const val TAG = "ApkSigner"
+    companion object {
+        private const val TAG = "ApkSignerWrapper"
+    }
 
     /**
      * Signs an APK file.
@@ -72,7 +73,7 @@ class ApkSigner(
             builder.setV4SigningEnabled(true).setV4SignatureOutputFile(idsigFile!!)
         }
 
-        val apkSigner = ApkSigner(builder.build())
+        val apkSigner = builder.build()
         apkSigner.sign()
 
         // Verify the signature
@@ -106,9 +107,9 @@ class ApkSigner(
  * Handles key management and caching of signed APKs.
  */
 class InstallApkSigner(
-    private val context: Context,
+    private val context: Context
 ) {
-    private var cachedSigner: ApkSigner? = null
+    private var cachedSigner: ApkSignerWrapper? = null
     private var cachedSchemes: SigSchemes? = null
     private var cachedZipAlign: Boolean = true
 
@@ -122,7 +123,7 @@ class InstallApkSigner(
             return // Already initialized with same config
         }
         val (privateKey, certificate) = SigningKeyManager.getOrCreateKeyPair(context)
-        cachedSigner = ApkSigner(privateKey, certificate, schemes, zipAlign)
+        cachedSigner = ApkSignerWrapper(privateKey, certificate, schemes, zipAlign)
         cachedSchemes = schemes
         cachedZipAlign = zipAlign
     }

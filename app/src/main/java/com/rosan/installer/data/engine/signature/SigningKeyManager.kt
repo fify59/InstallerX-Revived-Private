@@ -10,6 +10,7 @@ import java.math.BigInteger
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
+import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.Date
 import javax.security.auth.x500.X500Principal
@@ -53,13 +54,14 @@ object SigningKeyManager {
             .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
             .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
             .setKeySize(KEY_SIZE)
-            .setSubject(X500Principal("CN=InstallerX APK Signing Key"))
+            .setCertificateSubject(X500Principal("CN=InstallerX APK Signing Key"))
             .setCertificateSerialNumber(BigInteger.ONE)
             .setCertificateValidity(startDate, endDate)
+            .setRandomizedEncryptionRequired(false)
             .build()
 
         KeyPairGenerator.getInstance(KEY_ALGORITHM, KEYSTORE_PROVIDER)
-            .initialize(spec)
+            .initialize(spec, SecureRandom())
             .generateKeyPair()
     }
 
