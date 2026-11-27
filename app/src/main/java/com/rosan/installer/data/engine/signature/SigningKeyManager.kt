@@ -19,6 +19,7 @@ import java.security.PrivateKey
 import java.security.SecureRandom
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.security.spec.AlgorithmParameters
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Date
 import javax.crypto.Cipher
