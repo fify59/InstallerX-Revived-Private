@@ -96,6 +96,7 @@ enum class BooleanSetting {
     QuickOpenLSPosed,
     EnableFileLogging,
     UserSetLSPosedActive,
+
     // APK Signing settings
     LabEnableApkSigning,
     LabSigningV1Scheme,
