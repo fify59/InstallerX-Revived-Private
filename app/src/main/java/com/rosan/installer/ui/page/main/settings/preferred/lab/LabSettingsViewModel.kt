@@ -185,7 +185,7 @@ class LabSettingsViewModel(
                         context,
                         action.pkcs12File,
                         action.password,
-                        action.alias
+                        action.alias,
                     )
                     context.toast(R.string.lab_signing_key_imported_success, action.alias)
                 } catch (e: Exception) {
