@@ -7,6 +7,7 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import java.lang.reflect.Method
 import java.math.BigInteger
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -59,13 +60,22 @@ object SigningKeyManager {
             .setCertificateSerialNumber(BigInteger.ONE)
             .setRandomizedEncryptionRequired(false)
 
-        // Use setCertificateValidity for API < 29 compatibility (minSdk = 26)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            builder.setCertificateNotBefore(startDate)
-            builder.setCertificateNotAfter(endDate)
-        } else {
-            @Suppress("DEPRECATION")
-            builder.setCertificateValidity(startDate, endDate)
+        // setCertificateValidity was deprecated in API 29 and removed in API 33
+        // Use reflection to support all API levels
+        try {
+            val method = KeyGenParameterSpec.Builder::class.java.getDeclaredMethod(
+                "setCertificateValidity",
+                Date::class.java,
+                Date::class.java
+            )
+            method.isAccessible = true
+            method.invoke(builder, startDate, endDate)
+        } catch (e: Exception) {
+            // Fallback for API 29+ where setCertificateNotBefore/NotAfter are available
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                builder.setCertificateNotBefore(startDate)
+                builder.setCertificateNotAfter(endDate)
+            }
         }
 
         val spec = builder.build()
