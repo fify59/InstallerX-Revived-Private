@@ -56,13 +56,14 @@ object SigningKeyManager {
             .setKeySize(KEY_SIZE)
             .setCertificateSubject(X500Principal("CN=InstallerX APK Signing Key"))
             .setCertificateSerialNumber(BigInteger.ONE)
-            .setCertificateValidity(startDate, endDate)
+            .setCertificateNotBefore(startDate)
+            .setCertificateNotAfter(endDate)
             .setRandomizedEncryptionRequired(false)
             .build()
 
-        KeyPairGenerator.getInstance(KEY_ALGORITHM, KEYSTORE_PROVIDER)
-            .initialize(spec, SecureRandom())
-            .generateKeyPair()
+        val keyPairGenerator = KeyPairGenerator.getInstance(KEY_ALGORITHM, KEYSTORE_PROVIDER)
+        keyPairGenerator.initialize(spec, SecureRandom())
+        keyPairGenerator.generateKeyPair()
     }
 
     /**

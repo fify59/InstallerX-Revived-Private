@@ -30,7 +30,6 @@ import com.rosan.installer.core.reflection.getValue
 import com.rosan.installer.data.engine.executor.PackageInstallerUtil.abiOverride
 import com.rosan.installer.data.engine.executor.PackageInstallerUtil.installFlags
 import com.rosan.installer.data.engine.executor.PackageManagerUtil
-import com.rosan.installer.data.engine.signature.ApkSigner
 import com.rosan.installer.data.engine.signature.InstallApkSigner
 import com.rosan.installer.data.engine.signature.SigSchemes
 import com.rosan.installer.domain.device.provider.DeviceCapabilityProvider
