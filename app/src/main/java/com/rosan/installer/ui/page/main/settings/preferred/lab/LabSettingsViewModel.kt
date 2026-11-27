@@ -11,12 +11,12 @@ import com.rosan.installer.domain.settings.repository.AppSettingsRepository
 import com.rosan.installer.domain.settings.repository.BooleanSetting
 import com.rosan.installer.domain.settings.repository.StringSetting
 import com.rosan.installer.domain.settings.usecase.settings.UpdateSettingUseCase
+import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.io.File
 import timber.log.Timber
 
 class LabSettingsViewModel(
@@ -163,22 +163,8 @@ class LabSettingsViewModel(
                 )
             }
 
-            is LabSettingsAction.LabImportSigningKey -> viewModelScope.launch {
-                try {
-                    SigningKeyManager.importKeyPair(
-                        context,
-                        action.privateKeyFile,
-                        action.certificateFile
-                    )
-                    context.toast(R.string.lab_signing_key_imported_success)
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to import signing key")
-                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
-                }
-            }
-
-            is LabSettingsAction.LabImportSigningKeyPicker -> {
-                // This action triggers the file picker in the UI
+            is LabSettingsAction.LabImportSigningKey -> {
+                // Placeholder for key import - implementation in UI
             }
         }
     }

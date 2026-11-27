@@ -24,6 +24,5 @@ sealed interface LabSettingsAction {
     data class LabChangeSigningV3Scheme(val enable: Boolean) : LabSettingsAction
     data class LabChangeSigningV4Scheme(val enable: Boolean) : LabSettingsAction
     data class LabChangeSigningZipAlign(val enable: Boolean) : LabSettingsAction
-    data class LabImportSigningKey(val privateKeyFile: File, val certificateFile: File?) : LabSettingsAction
-    object LabImportSigningKeyPicker : LabSettingsAction
+    object LabImportSigningKey : LabSettingsAction
 }

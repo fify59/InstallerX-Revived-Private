@@ -23,8 +23,8 @@ import java.util.Date
 import javax.security.auth.x500.X500Principal
 
 /**
- * Manages the APK signing key pair in Android KeyStore.
- * Generates a new key on first use, or imports an existing key.
+ * Manages the APK signing key pair.
+ * Supports auto-generated key in Android KeyStore or imported key from files.
  */
 object SigningKeyManager {
     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
@@ -33,13 +33,23 @@ object SigningKeyManager {
     private const val KEY_SIZE = 2048
     private const val VALIDITY_YEARS = 25
 
+    // In-memory storage for imported keys (since Android KeyStore doesn't support arbitrary key import)
+    private var importedPrivateKey: PrivateKey? = null
+    private var importedCertificate: X509Certificate? = null
+
     /**
      * Gets or creates the signing key pair.
-     * On first call, generates a new RSA key pair and self-signed certificate.
+     * On first call, generates a new RSA key pair and self-signed certificate in KeyStore.
      * Subsequent calls return the cached key pair.
+     * If a custom key was imported, returns that instead.
      */
     @Throws(Exception::class)
     fun getOrCreateKeyPair(context: Context): Pair<PrivateKey, X509Certificate> {
+        // Return imported key if available
+        if (importedPrivateKey != null && importedCertificate != null) {
+            return importedPrivateKey!! to importedCertificate!!
+        }
+
         val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
 
         if (!keyStore.containsAlias(KEY_ALIAS)) {
@@ -63,23 +73,17 @@ object SigningKeyManager {
         privateKeyFile: File,
         certificateFile: File? = null
     ): Pair<PrivateKey, X509Certificate> {
-        val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
-
-        // Delete existing key if present
-        if (keyStore.containsAlias(KEY_ALIAS)) {
-            keyStore.deleteEntry(KEY_ALIAS)
-        }
-
         // Read private key
         val privateKey = readPrivateKey(privateKeyFile)
 
         // Read certificate
         val certificate = certificateFile?.let { readCertificate(it) }
             ?: readCertificateFromPrivateKey(privateKeyFile, privateKey)
-            ?: generateSelfSignedCertificate(privateKey)
+            ?: throw IllegalArgumentException("Certificate file is required. Please provide a certificate file (.pem, .crt, .cer) or use a PKCS#12 file.")
 
-        // Store in KeyStore
-        storeKeyPair(keyStore, privateKey, certificate)
+        // Store in memory
+        importedPrivateKey = privateKey
+        importedCertificate = certificate
 
         return privateKey to certificate
     }
@@ -93,13 +97,6 @@ object SigningKeyManager {
         pkcs12File: File,
         password: String
     ): Pair<PrivateKey, X509Certificate> {
-        val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
-
-        // Delete existing key if present
-        if (keyStore.containsAlias(KEY_ALIAS)) {
-            keyStore.deleteEntry(KEY_ALIAS)
-        }
-
         // Load PKCS#12
         val pkcs12Store = KeyStore.getInstance("PKCS12")
         FileInputStream(pkcs12File).use { input ->
@@ -127,8 +124,9 @@ object SigningKeyManager {
             throw IllegalArgumentException("No valid key entry found in PKCS#12 file")
         }
 
-        // Store in Android KeyStore
-        storeKeyPair(keyStore, privateKey, certificate)
+        // Store in memory
+        importedPrivateKey = privateKey
+        importedCertificate = certificate
 
         return privateKey to certificate
     }
@@ -179,42 +177,23 @@ object SigningKeyManager {
         return null
     }
 
-    private fun generateSelfSignedCertificate(privateKey: PrivateKey): X509Certificate {
-        // This is a fallback - in practice we should require a certificate
-        throw IllegalArgumentException("Certificate file is required. Please provide a certificate file (.pem, .crt, .cer) or use a PKCS#12 file.")
-    }
-
-    private fun storeKeyPair(
-        keyStore: KeyStore,
-        privateKey: PrivateKey,
-        certificate: X509Certificate
-    ) {
-        val startDate = Date()
-        val endDate = Date(startDate.time + VALIDITY_YEARS * 365L * 24 * 60 * 60 * 1000)
-
-        // We need to create a certificate with our desired validity
-        // Since we can't modify the imported certificate, we store it as-is
-        // and use a KeyProtection for signing
-        val protection = KeyStore.ProtectionParameter.Builder()
-            .build()
-
-        // Android KeyStore doesn't allow direct import of existing key pairs
-        // We need to use a workaround: generate a new key and replace it
-        // Actually, for Android KeyStore, we can't directly import arbitrary keys
-        // The proper approach is to use the imported key for signing directly
-        // but that requires keeping the key in memory
-
-        // For now, store as a PrivateKeyEntry with the certificate
-        val entry = KeyStore.PrivateKeyEntry(
-            arrayOf(certificate),
-            privateKey,
-            KeyStore.ProtectionParameter.Builder().build()
-        )
-        keyStore.setEntry(KEY_ALIAS, entry, protection)
+    /**
+     * Clears any imported key, reverting to auto-generated KeyStore key.
+     */
+    fun clearImportedKey() {
+        importedPrivateKey = null
+        importedCertificate = null
     }
 
     /**
-     * Generates a new RSA key pair with a self-signed X.509 certificate.
+     * Checks if a custom key has been imported.
+     */
+    fun hasCustomKey(): Boolean {
+        return importedPrivateKey != null && importedCertificate != null
+    }
+
+    /**
+     * Generates a new RSA key pair with a self-signed X.509 certificate in Android KeyStore.
      */
     private fun generateKeyPair(keyStore: KeyStore) {
         val startDate = Date()
@@ -265,22 +244,14 @@ object SigningKeyManager {
     }
 
     /**
-     * Deletes the signing key (for testing/reset).
+     * Deletes the signing key from KeyStore (for testing/reset).
      */
     fun deleteKey(context: Context) {
         val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
         if (keyStore.containsAlias(KEY_ALIAS)) {
             keyStore.deleteEntry(KEY_ALIAS)
         }
-    }
-
-    /**
-     * Checks if a custom key has been imported (vs auto-generated).
-     * Currently we can't easily distinguish, so this returns false.
-     * Could be enhanced by storing a preference flag.
-     */
-    fun hasCustomKey(context: Context): Boolean {
-        // Could check if key was imported by checking a flag in preferences
-        return false
+        // Also clear imported key
+        clearImportedKey()
     }
 }

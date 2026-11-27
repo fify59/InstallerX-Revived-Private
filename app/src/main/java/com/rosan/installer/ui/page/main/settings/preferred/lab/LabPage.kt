@@ -4,48 +4,6 @@
 
 package com.rosan.installer.ui.page.main.settings.preferred.lab
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.add
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.unit.dp
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -134,22 +92,6 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     val showRootImplementationDialog = remember { mutableStateOf(false) }
     val showSmartAuthorizerSheet = remember { mutableStateOf(false) }
     var showNonAdbConfirmation by rememberSaveable { mutableStateOf(false) }
-
-    // File pickers for importing signing key
-    val pickPrivateKey = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { privateKeyUri ->
-            // Now pick certificate
-            pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert"))
-        }
-    }
-    val pickCertificate = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { certUri ->
-            // Both files selected, dispatch import action
-            // We need to convert URIs to Files - use a temporary copy
-            // For now, just show a message that this needs more work
-            context.toast("Key import feature needs file access implementation")
-        }
-    }
 
     if (showNonAdbConfirmation) {
         AlertDialog(
@@ -459,8 +401,8 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                             title = stringResource(R.string.lab_import_signing_key),
                             description = stringResource(R.string.lab_import_signing_key_desc),
                             onClick = {
-                                // Launch private key picker
-                                pickPrivateKey.launch(arrayOf("application/octet-stream", "application/x-pkcs8", "application/pkcs8", "text/plain"))
+                                // For now, show toast that this feature needs more implementation
+                                context.toast("Key import: Select PKCS#8 private key and certificate files. Feature coming soon.")
                             },
                         ) {}
                     }
