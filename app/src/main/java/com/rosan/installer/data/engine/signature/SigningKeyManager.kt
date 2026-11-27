@@ -106,7 +106,7 @@ object SigningKeyManager {
         privateKeyFile: File,
         certificateFile: File? = null,
         alias: String = DEFAULT_KEY_ALIAS,
-        password: String? = null
+        password: String? = null,
     ): Pair<PrivateKey, X509Certificate> {
         // Read private key
         val privateKey = readPrivateKey(privateKeyFile, password)
@@ -139,7 +139,7 @@ object SigningKeyManager {
         context: Context,
         pkcs12File: File,
         password: String,
-        alias: String = DEFAULT_KEY_ALIAS
+        alias: String = DEFAULT_KEY_ALIAS,
     ): Pair<PrivateKey, X509Certificate> {
         // Load PKCS#12
         val pkcs12Store = KeyStore.getInstance("PKCS12")
@@ -253,16 +253,12 @@ object SigningKeyManager {
     /**
      * Checks if a custom key has been imported.
      */
-    fun hasCustomKey(): Boolean {
-        return importedPrivateKey != null && importedCertificate != null
-    }
+    fun hasCustomKey(): Boolean = importedPrivateKey != null && importedCertificate != null
 
     /**
      * Gets the alias of the currently imported key.
      */
-    fun getImportedAlias(): String? {
-        return importedAlias
-    }
+    fun getImportedAlias(): String? = importedAlias
 
     /**
      * Generates a new RSA key pair with a self-signed X.509 certificate in Android KeyStore.
