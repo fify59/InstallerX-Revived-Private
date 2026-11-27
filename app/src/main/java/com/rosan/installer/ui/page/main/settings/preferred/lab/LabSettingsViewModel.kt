@@ -5,12 +5,14 @@ package com.rosan.installer.ui.page.main.settings.preferred.lab
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rosan.installer.R
 import com.rosan.installer.data.engine.signature.SigningKeyManager
 import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerPreferences
 import com.rosan.installer.domain.settings.repository.AppSettingsRepository
 import com.rosan.installer.domain.settings.repository.BooleanSetting
 import com.rosan.installer.domain.settings.repository.StringSetting
 import com.rosan.installer.domain.settings.usecase.settings.UpdateSettingUseCase
+import com.rosan.installer.util.toast
 import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

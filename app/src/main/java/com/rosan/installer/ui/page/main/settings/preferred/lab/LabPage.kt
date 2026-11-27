@@ -474,7 +474,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                             },
                         ) {}
                     }
-                    item(animatedVisibility = uiState.labEnableApkSigning && SigningKeyManager.hasCustomKey()) {
+                    item(animatedVisibility = uiState.labEnableApkSigning && hasCustomKey) {
                         BaseWidget(
                             icon = AppIcons.Delete,
                             title = stringResource(R.string.lab_clear_imported_key),
