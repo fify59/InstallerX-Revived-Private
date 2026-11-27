@@ -25,10 +25,11 @@ import javax.security.auth.x500.X500Principal
 /**
  * Manages the APK signing key pair.
  * Supports auto-generated key in Android KeyStore or imported key from files.
+ * Inspired by AppManagerNG's KeyStoreManager - supports alias-based keys with passwords.
  */
 object SigningKeyManager {
     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
-    private const val KEY_ALIAS = "installerx_apk_signing_key"
+    private const val DEFAULT_KEY_ALIAS = "installerx_apk_signing_key"
     private const val KEY_ALGORITHM = KeyProperties.KEY_ALGORITHM_RSA
     private const val KEY_SIZE = 2048
     private const val VALIDITY_YEARS = 25
@@ -36,6 +37,7 @@ object SigningKeyManager {
     // In-memory storage for imported keys (since Android KeyStore doesn't support arbitrary key import)
     private var importedPrivateKey: PrivateKey? = null
     private var importedCertificate: X509Certificate? = null
+    private var importedAlias: String? = null
 
     /**
      * Gets or creates the signing key pair.
@@ -52,29 +54,62 @@ object SigningKeyManager {
 
         val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
 
-        if (!keyStore.containsAlias(KEY_ALIAS)) {
+        if (!keyStore.containsAlias(DEFAULT_KEY_ALIAS)) {
             generateKeyPair(keyStore)
         }
 
-        val entry = keyStore.getEntry(KEY_ALIAS, null) as KeyStore.PrivateKeyEntry
+        val entry = keyStore.getEntry(DEFAULT_KEY_ALIAS, null) as KeyStore.PrivateKeyEntry
         return entry.privateKey to entry.certificate as X509Certificate
     }
 
     /**
-     * Imports a private key and certificate from PEM/PKCS#8 files.
+     * Gets the signing key pair with a specific alias.
+     * Returns imported key if it matches the alias, otherwise falls back to default.
+     */
+    @Throws(Exception::class)
+    fun getKeyPair(context: Context, alias: String): Pair<PrivateKey, X509Certificate> {
+        // Return imported key if it matches the alias
+        if (importedPrivateKey != null && importedCertificate != null && importedAlias == alias) {
+            return importedPrivateKey!! to importedCertificate!!
+        }
+
+        val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+
+        if (!keyStore.containsAlias(alias)) {
+            if (alias == DEFAULT_KEY_ALIAS) {
+                generateKeyPair(keyStore)
+            } else {
+                throw KeyStoreException("Alias $alias not found in KeyStore")
+            }
+        }
+
+        val entry = keyStore.getEntry(alias, null) as KeyStore.PrivateKeyEntry
+        return entry.privateKey to entry.certificate as X509Certificate
+    }
+
+    /**
+     * Imports a private key and certificate from PEM/PKCS#8 files with optional password.
      * Supports:
-     * - PKCS#8 private key (.pk8, .pem, .key)
+     * - PKCS#8 private key (.pk8, .pem, .key) - optionally encrypted with password
      * - X.509 certificate (.pem, .crt, .cer, .der)
      * - Combined PEM file with both private key and certificate
+     *
+     * @param context Application context
+     * @param privateKeyFile File containing the private key
+     * @param certificateFile File containing the certificate (optional if combined in privateKeyFile)
+     * @param alias Alias to store the key under (default: installerx_apk_signing_key)
+     * @param password Password for encrypted PKCS#8 private key (optional)
      */
     @Throws(Exception::class)
     fun importKeyPair(
         context: Context,
         privateKeyFile: File,
         certificateFile: File? = null,
+        alias: String = DEFAULT_KEY_ALIAS,
+        password: String? = null
     ): Pair<PrivateKey, X509Certificate> {
         // Read private key
-        val privateKey = readPrivateKey(privateKeyFile)
+        val privateKey = readPrivateKey(privateKeyFile, password)
 
         // Read certificate
         val certificate = certificateFile?.let { readCertificate(it) }
@@ -84,18 +119,27 @@ object SigningKeyManager {
         // Store in memory
         importedPrivateKey = privateKey
         importedCertificate = certificate
+        importedAlias = alias
 
         return privateKey to certificate
     }
 
     /**
      * Imports a key pair from a PKCS#12 keystore file (.p12, .pfx)
+     * Supports password-protected PKCS#12 files with multiple entries.
+     * Uses the first key entry found.
+     *
+     * @param context Application context
+     * @param pkcs12File File containing the PKCS#12 keystore
+     * @param password Password for the PKCS#12 file
+     * @param alias Alias to store the key under (default: installerx_apk_signing_key)
      */
     @Throws(Exception::class)
     fun importFromPkcs12(
         context: Context,
         pkcs12File: File,
         password: String,
+        alias: String = DEFAULT_KEY_ALIAS
     ): Pair<PrivateKey, X509Certificate> {
         // Load PKCS#12
         val pkcs12Store = KeyStore.getInstance("PKCS12")
@@ -109,10 +153,10 @@ object SigningKeyManager {
         var certificate: X509Certificate? = null
 
         while (aliases.hasMoreElements()) {
-            val alias = aliases.nextElement()
-            if (pkcs12Store.isKeyEntry(alias)) {
-                privateKey = pkcs12Store.getKey(alias, password.toCharArray()) as PrivateKey?
-                val certChain = pkcs12Store.getCertificateChain(alias)
+            val pkcs12Alias = aliases.nextElement()
+            if (pkcs12Store.isKeyEntry(pkcs12Alias)) {
+                privateKey = pkcs12Store.getKey(pkcs12Alias, password.toCharArray()) as PrivateKey?
+                val certChain = pkcs12Store.getCertificateChain(pkcs12Alias)
                 if (certChain.isNotEmpty()) {
                     certificate = certChain[0] as X509Certificate
                 }
@@ -124,14 +168,15 @@ object SigningKeyManager {
             throw IllegalArgumentException("No valid key entry found in PKCS#12 file")
         }
 
-        // Store in memory
+        // Store in memory with specified alias
         importedPrivateKey = privateKey
         importedCertificate = certificate
+        importedAlias = alias
 
         return privateKey to certificate
     }
 
-    private fun readPrivateKey(file: File): PrivateKey {
+    private fun readPrivateKey(file: File, password: String?): PrivateKey {
         val bytes = file.readBytes()
         val content = String(bytes).trim()
 
@@ -145,8 +190,27 @@ object SigningKeyManager {
         }
 
         val decoded = Base64.decode(pemContent, Base64.DEFAULT)
-        val keySpec = PKCS8EncodedKeySpec(decoded)
+
         val keyFactory = KeyFactory.getInstance("RSA")
+
+        // Try to read as encrypted PKCS#8 if password provided
+        if (password != null && password.isNotEmpty()) {
+            try {
+                val pkcs8Spec = java.security.spec.EncryptedPrivateKeyInfo(decoded)
+                val cipher = javax.crypto.Cipher.getInstance(pkcs8Spec.getAlgName())
+                val key = javax.crypto.SecretKeyFactory.getInstance(pkcs8Spec.getAlgName())
+                    .generateSecret(javax.crypto.spec.PBEKeySpec(password.toCharArray()))
+                cipher.init(javax.crypto.Cipher.DECRYPT_MODE, key, pkcs8Spec.getAlgParameters())
+                val decrypted = cipher.doFinal(pkcs8Spec.getEncryptedData())
+                val keySpec = PKCS8EncodedKeySpec(decrypted)
+                return keyFactory.generatePrivate(keySpec)
+            } catch (e: Exception) {
+                // Fall through to try unencrypted
+            }
+        }
+
+        // Try as unencrypted PKCS#8
+        val keySpec = PKCS8EncodedKeySpec(decoded)
         return keyFactory.generatePrivate(keySpec)
     }
 
@@ -183,12 +247,22 @@ object SigningKeyManager {
     fun clearImportedKey() {
         importedPrivateKey = null
         importedCertificate = null
+        importedAlias = null
     }
 
     /**
      * Checks if a custom key has been imported.
      */
-    fun hasCustomKey(): Boolean = importedPrivateKey != null && importedCertificate != null
+    fun hasCustomKey(): Boolean {
+        return importedPrivateKey != null && importedCertificate != null
+    }
+
+    /**
+     * Gets the alias of the currently imported key.
+     */
+    fun getImportedAlias(): String? {
+        return importedAlias
+    }
 
     /**
      * Generates a new RSA key pair with a self-signed X.509 certificate in Android KeyStore.
@@ -197,7 +271,7 @@ object SigningKeyManager {
         val startDate = Date()
         val endDate = Date(startDate.time + VALIDITY_YEARS * 365L * 24 * 60 * 60 * 1000)
 
-        val builder = KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_SIGN)
+        val builder = KeyGenParameterSpec.Builder(DEFAULT_KEY_ALIAS, KeyProperties.PURPOSE_SIGN)
             .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
             .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
             .setKeySize(KEY_SIZE)
@@ -246,8 +320,8 @@ object SigningKeyManager {
      */
     fun deleteKey(context: Context) {
         val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
-        if (keyStore.containsAlias(KEY_ALIAS)) {
-            keyStore.deleteEntry(KEY_ALIAS)
+        if (keyStore.containsAlias(DEFAULT_KEY_ALIAS)) {
+            keyStore.deleteEntry(DEFAULT_KEY_ALIAS)
         }
         // Also clear imported key
         clearImportedKey()

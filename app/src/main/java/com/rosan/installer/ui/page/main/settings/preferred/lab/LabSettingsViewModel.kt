@@ -163,8 +163,40 @@ class LabSettingsViewModel(
                 )
             }
 
-            is LabSettingsAction.LabImportSigningKey -> {
-                // Placeholder for key import - implementation in UI
+            is LabSettingsAction.LabImportSigningKey -> viewModelScope.launch {
+                try {
+                    SigningKeyManager.importKeyPair(
+                        context,
+                        action.privateKeyFile,
+                        action.certificateFile,
+                        action.alias,
+                        action.password
+                    )
+                    context.toast(R.string.lab_signing_key_imported_success, action.alias)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to import signing key")
+                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
+                }
+            }
+
+            is LabSettingsAction.LabImportPkcs12 -> viewModelScope.launch {
+                try {
+                    SigningKeyManager.importFromPkcs12(
+                        context,
+                        action.pkcs12File,
+                        action.password,
+                        action.alias
+                    )
+                    context.toast(R.string.lab_signing_key_imported_success, action.alias)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to import PKCS#12 keystore")
+                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
+                }
+            }
+
+            is LabSettingsAction.LabClearImportedKey -> {
+                SigningKeyManager.clearImportedKey()
+                context.toast(R.string.lab_signing_key_cleared)
             }
         }
     }

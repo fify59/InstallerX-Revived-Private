@@ -23,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -96,16 +98,32 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     val showSmartAuthorizerSheet = remember { mutableStateOf(false) }
     var showNonAdbConfirmation by rememberSaveable { mutableStateOf(false) }
 
+    // State for import key dialog
+    var showImportKeyDialog by remember { mutableStateOf(false) }
+    var showImportPkcs12Dialog by remember { mutableStateOf(false) }
+    var importAlias by remember { mutableStateOf("installerx_apk_signing_key") }
+    var importPassword by remember { mutableStateOf("") }
+    var pendingImportAction by remember { mutableStateOf<LabSettingsAction?>(null) }
+
     // File pickers for importing signing key
     var privateKeyUri by remember { mutableStateOf<android.net.Uri?>(null) }
     // Define pickCertificate first so it can be used in pickPrivateKey
     val pickCertificate = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { certUri ->
-            // Both files selected, import the key
+            // Both files selected, show alias/password dialog
             val privateKeyFile = copyUriToCacheFile(context, privateKeyUri!!, "private_key")
             val certificateFile = copyUriToCacheFile(context, certUri, "certificate")
             if (privateKeyFile != null && certificateFile != null) {
-                viewModel.dispatch(LabSettingsAction.LabImportSigningKey(privateKeyFile, certificateFile))
+                // Store files and show dialog for alias/password
+                pendingImportAction = LabSettingsAction.LabImportSigningKey(
+                    privateKeyFile = privateKeyFile,
+                    certificateFile = certificateFile,
+                    alias = "installerx_apk_signing_key",
+                    password = null
+                )
+                importAlias = "installerx_apk_signing_key"
+                importPassword = ""
+                showImportKeyDialog = true
             } else {
                 context.toast(R.string.lab_signing_key_import_failed, "Failed to read files")
             }
@@ -428,6 +446,43 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                             description = stringResource(R.string.lab_import_signing_key_desc),
                             onClick = {
                                 pickPrivateKey.launch(arrayOf("application/octet-stream", "application/x-pkcs8", "application/pkcs8", "text/plain", "application/pem"))
+                            },
+                        ) {}
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        BaseWidget(
+                            icon = AppIcons.Import,
+                            title = stringResource(R.string.lab_import_pkcs12),
+                            description = stringResource(R.string.lab_import_pkcs12_desc),
+                            onClick = {
+                                val pickPkcs12 = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                                    uri?.let {
+                                        val pkcs12File = copyUriToCacheFile(context, it, "keystore")
+                                        if (pkcs12File != null) {
+                                            pendingImportAction = LabSettingsAction.LabImportPkcs12(
+                                                pkcs12File = pkcs12File,
+                                                password = "",
+                                                alias = "installerx_apk_signing_key"
+                                            )
+                                            importAlias = "installerx_apk_signing_key"
+                                            importPassword = ""
+                                            showImportPkcs12Dialog = true
+                                        } else {
+                                            context.toast(R.string.lab_signing_key_import_failed, "Failed to read file")
+                                        }
+                                    }
+                                }
+                                pickPkcs12.launch(arrayOf("application/x-pkcs12", "application/pkcs12", "application/octet-stream"))
+                            },
+                        ) {}
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning && SigningKeyManager.hasCustomKey()) {
+                        BaseWidget(
+                            icon = AppIcons.Delete,
+                            title = stringResource(R.string.lab_clear_imported_key),
+                            description = stringResource(R.string.lab_clear_imported_key_desc),
+                            onClick = {
+                                viewModel.dispatch(LabSettingsAction.LabClearImportedKey)
                             },
                         ) {}
                     }
