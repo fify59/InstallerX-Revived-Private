@@ -43,7 +43,7 @@ class ApkSignerWrapper(
     private val privateKey: PrivateKey,
     private val certificate: X509Certificate,
     private val schemes: SigSchemes = SigSchemes.DEFAULT,
-    private val zipAlign: Boolean = true
+    private val zipAlign: Boolean = true,
 ) {
     companion object {
         private const val TAG = "ApkSignerWrapper"
@@ -107,7 +107,7 @@ class ApkSignerWrapper(
  * Handles key management and caching of signed APKs.
  */
 class InstallApkSigner(
-    private val context: Context
+    private val context: Context,
 ) {
     private var cachedSigner: ApkSignerWrapper? = null
     private var cachedSchemes: SigSchemes? = null
