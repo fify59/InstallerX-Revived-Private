@@ -16,6 +16,7 @@ sealed interface LabSettingsAction {
     data class LabChangeTryDifferentArchitecture(val enable: Boolean) : LabSettingsAction
     data class LabChangeTryMultipleAuthorizersOnInstall(val enable: Boolean) : LabSettingsAction
     data class LabChangeSmartAuthorizerCandidates(val candidates: List<SmartAuthorizerCandidate>) : LabSettingsAction
+
     // APK Signing actions
     data class LabChangeEnableApkSigning(val enable: Boolean) : LabSettingsAction
     data class LabChangeSigningV1Scheme(val enable: Boolean) : LabSettingsAction
