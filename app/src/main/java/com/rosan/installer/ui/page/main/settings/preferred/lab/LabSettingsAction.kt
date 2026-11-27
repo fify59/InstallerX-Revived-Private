@@ -29,7 +29,7 @@ sealed interface LabSettingsAction {
         val privateKeyFile: File,
         val certificateFile: File,
         val alias: String = "installerx_apk_signing_key",
-        val password: String? = null
+        val password: String? = null,
     ) : LabSettingsAction
     data class LabImportPkcs12(
         val pkcs12File: File,
