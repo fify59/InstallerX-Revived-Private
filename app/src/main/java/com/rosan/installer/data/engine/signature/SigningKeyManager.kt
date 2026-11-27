@@ -66,7 +66,7 @@ object SigningKeyManager {
             val method = KeyGenParameterSpec.Builder::class.java.getDeclaredMethod(
                 "setCertificateValidity",
                 Date::class.java,
-                Date::class.java
+                Date::class.java,
             )
             method.isAccessible = true
             method.invoke(builder, startDate, endDate)
