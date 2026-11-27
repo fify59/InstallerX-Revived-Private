@@ -460,7 +460,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                                             pendingImportAction = LabSettingsAction.LabImportPkcs12(
                                                 pkcs12File = pkcs12File,
                                                 password = "",
-                                                alias = "installerx_apk_signing_key"
+                                                alias = "installerx_apk_signing_key",
                                             )
                                             importAlias = "installerx_apk_signing_key"
                                             importPassword = ""
