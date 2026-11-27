@@ -4,6 +4,7 @@
 
 package com.rosan.installer.ui.page.main.settings.preferred.lab
 
+import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -96,13 +97,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
 
     // File pickers for importing signing key
     var privateKeyUri by remember { mutableStateOf<android.net.Uri?>(null) }
-    val pickPrivateKey = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            privateKeyUri = it
-            // Now pick certificate
-            pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert", "application/octet-stream"))
-        }
-    }
+    // Define pickCertificate first so it can be used in pickPrivateKey
     val pickCertificate = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { certUri ->
             // Both files selected, import the key
@@ -113,6 +108,13 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
             } else {
                 context.toast(R.string.lab_signing_key_import_failed, "Failed to read files")
             }
+        }
+    }
+    val pickPrivateKey = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            privateKeyUri = it
+            // Now pick certificate
+            pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert", "application/octet-stream"))
         }
     }
 
