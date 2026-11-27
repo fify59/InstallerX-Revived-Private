@@ -46,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rosan.installer.R
 import com.rosan.installer.core.env.AppConfig
@@ -91,6 +92,22 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     val showRootImplementationDialog = remember { mutableStateOf(false) }
     val showSmartAuthorizerSheet = remember { mutableStateOf(false) }
     var showNonAdbConfirmation by rememberSaveable { mutableStateOf(false) }
+
+    // File pickers for importing signing key
+    val pickPrivateKey = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { privateKeyUri ->
+            // Now pick certificate
+            pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert"))
+        }
+    }
+    val pickCertificate = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { certUri ->
+            // Both files selected, dispatch import action
+            // We need to convert URIs to Files - use a temporary copy
+            // For now, just show a message that this needs more work
+            context.toast("Key import feature needs file access implementation")
+        }
+    }
 
     if (showNonAdbConfirmation) {
         AlertDialog(
@@ -393,6 +410,17 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                                 )
                             },
                         )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        BaseWidget(
+                            icon = AppIcons.Import,
+                            title = stringResource(R.string.lab_import_signing_key),
+                            description = stringResource(R.string.lab_import_signing_key_desc),
+                            onClick = {
+                                // Launch private key picker
+                                pickPrivateKey.launch(arrayOf("application/octet-stream", "application/x-pkcs8", "application/pkcs8", "text/plain"))
+                            },
+                        ) {}
                     }
                 }
             }

@@ -983,6 +983,10 @@
     <string name="lab_signing_v4_scheme_desc">APK Signature Scheme v4. For incremental installs. Android 11.0+.</string>
     <string name="lab_signing_zip_align">ZipAlign (4-byte alignment)</string>
     <string name="lab_signing_zip_align_desc">Align uncompressed data in APK to 4-byte boundaries for memory mapping optimization.</string>
+    <string name="lab_import_signing_key">Import Signing Key</string>
+    <string name="lab_import_signing_key_desc">Import your own private key and certificate for signing. Select a PKCS#8 private key (.pk8, .pem, .key) and optionally a certificate (.pem, .crt, .cer).</string>
+    <string name="lab_signing_key_imported_success">Signing key imported successfully</string>
+    <string name="lab_signing_key_import_failed">Failed to import signing key: %s</string>
     <string name="lab_show_apk_path">Show file path</string>
     <string name="lab_show_apk_path_label">File path</string>
     <string name="lab_show_apk_path_desc">Display the file path in app details</string>

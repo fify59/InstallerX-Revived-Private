@@ -2,8 +2,10 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.ui.page.main.settings.preferred.lab
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rosan.installer.data.engine.signature.SigningKeyManager
 import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerPreferences
 import com.rosan.installer.domain.settings.repository.AppSettingsRepository
 import com.rosan.installer.domain.settings.repository.BooleanSetting
@@ -14,8 +16,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.io.File
 
-class LabSettingsViewModel(appSettingsRepo: AppSettingsRepository, private val updateSetting: UpdateSettingUseCase) : ViewModel() {
+class LabSettingsViewModel(
+    appSettingsRepo: AppSettingsRepository,
+    private val updateSetting: UpdateSettingUseCase,
+    private val context: Context,
+) : ViewModel() {
 
     val state: StateFlow<LabSettingsState> = appSettingsRepo.preferencesFlow.map { prefs ->
         LabSettingsState(
@@ -153,6 +161,24 @@ class LabSettingsViewModel(appSettingsRepo: AppSettingsRepository, private val u
                     BooleanSetting.LabSigningZipAlign,
                     action.enable,
                 )
+            }
+
+            is LabSettingsAction.LabImportSigningKey -> viewModelScope.launch {
+                try {
+                    SigningKeyManager.importKeyPair(
+                        context,
+                        action.privateKeyFile,
+                        action.certificateFile
+                    )
+                    context.toast(R.string.lab_signing_key_imported_success)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to import signing key")
+                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
+                }
+            }
+
+            is LabSettingsAction.LabImportSigningKeyPicker -> {
+                // This action triggers the file picker in the UI
             }
         }
     }

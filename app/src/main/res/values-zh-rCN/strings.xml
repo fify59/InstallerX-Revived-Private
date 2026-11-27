@@ -962,6 +962,10 @@
     <string name="lab_signing_v4_scheme_desc">APK 签名方案 v4。用于增量安装。Android 11.0+。</string>
     <string name="lab_signing_zip_align">ZipAlign (4 字节对齐)</string>
     <string name="lab_signing_zip_align_desc">将 APK 中未压缩的数据按 4 字节边界对齐，以优化内存映射。</string>
+    <string name="lab_import_signing_key">导入签名密钥</string>
+    <string name="lab_import_signing_key_desc">导入您自己的私钥和证书用于签名。选择 PKCS#8 私钥 (.pk8, .pem, .key) 以及可选的证书 (.pem, .crt, .cer)。</string>
+    <string name="lab_signing_key_imported_success">签名密钥导入成功</string>
+    <string name="lab_signing_key_import_failed">签名密钥导入失败: %s</string>
     <string name="lab_show_apk_path">显示文件路径</string>
     <string name="lab_show_apk_path_label">文件路径</string>
     <string name="lab_show_apk_path_desc">在应用详情中显示文件路径</string>
