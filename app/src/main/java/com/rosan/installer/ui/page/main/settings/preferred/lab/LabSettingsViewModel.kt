@@ -170,7 +170,7 @@ class LabSettingsViewModel(
                         action.privateKeyFile,
                         action.certificateFile,
                         action.alias,
-                        action.password
+                        action.password,
                     )
                     context.toast(R.string.lab_signing_key_imported_success, action.alias)
                 } catch (e: Exception) {

@@ -34,7 +34,7 @@ sealed interface LabSettingsAction {
     data class LabImportPkcs12(
         val pkcs12File: File,
         val password: String,
-        val alias: String = "installerx_apk_signing_key"
+        val alias: String = "installerx_apk_signing_key",
     ) : LabSettingsAction
     object LabClearImportedKey : LabSettingsAction
 }
