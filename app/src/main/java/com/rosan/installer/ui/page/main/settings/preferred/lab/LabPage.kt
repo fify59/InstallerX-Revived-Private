@@ -318,7 +318,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                 ) {
                     item {
                         SwitchWidget(
-                            icon = AppIcons.Security,
+                            icon = AppIcons.Sign,
                             title = stringResource(R.string.lab_enable_apk_signing),
                             description = stringResource(R.string.lab_enable_apk_signing_desc),
                             checked = uiState.labEnableApkSigning,
@@ -331,7 +331,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     }
                     item(animatedVisibility = uiState.labEnableApkSigning) {
                         SwitchWidget(
-                            icon = AppIcons.Security,
+                            icon = AppIcons.Sign,
                             title = stringResource(R.string.lab_signing_v1_scheme),
                             description = stringResource(R.string.lab_signing_v1_scheme_desc),
                             checked = uiState.labSigningV1Scheme,
@@ -344,7 +344,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     }
                     item(animatedVisibility = uiState.labEnableApkSigning) {
                         SwitchWidget(
-                            icon = AppIcons.Security,
+                            icon = AppIcons.Sign,
                             title = stringResource(R.string.lab_signing_v2_scheme),
                             description = stringResource(R.string.lab_signing_v2_scheme_desc),
                             checked = uiState.labSigningV2Scheme,
@@ -357,7 +357,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     }
                     item(animatedVisibility = uiState.labEnableApkSigning) {
                         SwitchWidget(
-                            icon = AppIcons.Security,
+                            icon = AppIcons.Sign,
                             title = stringResource(R.string.lab_signing_v3_scheme),
                             description = stringResource(R.string.lab_signing_v3_scheme_desc),
                             checked = uiState.labSigningV3Scheme,
@@ -370,7 +370,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     }
                     item(animatedVisibility = uiState.labEnableApkSigning) {
                         SwitchWidget(
-                            icon = AppIcons.Security,
+                            icon = AppIcons.Sign,
                             title = stringResource(R.string.lab_signing_v4_scheme),
                             description = stringResource(R.string.lab_signing_v4_scheme_desc),
                             checked = uiState.labSigningV4Scheme,
@@ -383,7 +383,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     }
                     item(animatedVisibility = uiState.labEnableApkSigning) {
                         SwitchWidget(
-                            icon = AppIcons.Security,
+                            icon = AppIcons.Sign,
                             title = stringResource(R.string.lab_signing_zip_align),
                             description = stringResource(R.string.lab_signing_zip_align_desc),
                             checked = uiState.labSigningZipAlign,
