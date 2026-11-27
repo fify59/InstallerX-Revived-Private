@@ -3,6 +3,7 @@
 package com.rosan.installer.data.engine.signature
 
 import android.content.Context
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -50,16 +51,24 @@ object SigningKeyManager {
         val startDate = Date()
         val endDate = Date(startDate.time + VALIDITY_YEARS * 365L * 24 * 60 * 60 * 1000)
 
-        val spec = KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_SIGN)
+        val builder = KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_SIGN)
             .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
             .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
             .setKeySize(KEY_SIZE)
             .setCertificateSubject(X500Principal("CN=InstallerX APK Signing Key"))
             .setCertificateSerialNumber(BigInteger.ONE)
-            .setCertificateNotBefore(startDate)
-            .setCertificateNotAfter(endDate)
             .setRandomizedEncryptionRequired(false)
-            .build()
+
+        // Use setCertificateValidity for API < 29 compatibility (minSdk = 26)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            builder.setCertificateNotBefore(startDate)
+            builder.setCertificateNotAfter(endDate)
+        } else {
+            @Suppress("DEPRECATION")
+            builder.setCertificateValidity(startDate, endDate)
+        }
+
+        val spec = builder.build()
 
         val keyPairGenerator = KeyPairGenerator.getInstance(KEY_ALGORITHM, KEYSTORE_PROVIDER)
         keyPairGenerator.initialize(spec, SecureRandom())
