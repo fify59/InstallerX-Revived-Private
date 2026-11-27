@@ -22,5 +22,5 @@ sealed interface LabSettingsAction {
     data class LabChangeSigningV2Scheme(val enable: Boolean) : LabSettingsAction
     data class LabChangeSigningV3Scheme(val enable: Boolean) : LabSettingsAction
     data class LabChangeSigningV4Scheme(val enable: Boolean) : LabSettingsAction
-    data class LabChangeSigningZipAlign(val enable: Boolean) : LabSettingsAction,
+    data class LabChangeSigningZipAlign(val enable: Boolean) : LabSettingsAction
 }
