@@ -33,7 +33,7 @@ data class SigSchemes(
  */
 data class SignResult(
     val signedApk: File,
-    val idsig: File? = null,
+    val idsig: File? = null
 )
 
 /**
@@ -44,7 +44,7 @@ class ApkSigner(
     private val privateKey: PrivateKey,
     private val certificate: X509Certificate,
     private val schemes: SigSchemes = SigSchemes.DEFAULT,
-    private val zipAlign: Boolean = true,
+    private val zipAlign: Boolean = true
 ) {
     private const val TAG = "ApkSigner"
 
@@ -72,13 +72,14 @@ class ApkSigner(
             builder.setV4SigningEnabled(true).setV4SignatureOutputFile(idsigFile!!)
         }
 
-        ApkSigner(builder.build()).sign()
-
+        val apkSigner = ApkSigner(builder.build())
+        apkSigner.sign()
+        
         // Verify the signature
         if (!verify(outputApk, idsigFile)) {
             throw SignatureException("Signature verification failed after signing")
         }
-
+        
         return SignResult(outputApk, idsigFile)
     }
 
@@ -105,7 +106,7 @@ class ApkSigner(
  * Handles key management and caching of signed APKs.
  */
 class InstallApkSigner(
-    private val context: Context,
+    private val context: Context
 ) {
     private var cachedSigner: ApkSigner? = null
     private var cachedSchemes: SigSchemes? = null
@@ -135,15 +136,15 @@ class InstallApkSigner(
         if (!enableSigning || cachedSigner == null) {
             return inputApk
         }
-
+        
         val cacheDir = context.cacheDir
         val outputApk = File(cacheDir, "signed_${inputApk.name}")
-
+        
         // Clean up any existing cached file
         if (outputApk.exists()) {
             outputApk.delete()
         }
-
+        
         val result = cachedSigner!!.sign(inputApk, outputApk)
         return result.signedApk
     }

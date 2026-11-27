@@ -190,6 +190,13 @@ class AppDataStore(private val dataStore: DataStore<Preferences>, private val js
         val LAB_ENABLE_ABI_OVERRIDE =
             register(booleanPreferencesKey("lab_enable_abi_override"), PreferenceValueType.BOOLEAN)
         val LAB_TRY_DIFFERENT_ARCHITECTURE =
+
+        val LAB_ENABLE_APK_SIGNING = register(booleanPreferencesKey("lab_enable_apk_signing"), PreferenceValueType.BOOLEAN)
+        val LAB_SIGNING_V1_SCHEME = register(booleanPreferencesKey("lab_signing_v1_scheme"), PreferenceValueType.BOOLEAN)
+        val LAB_SIGNING_V2_SCHEME = register(booleanPreferencesKey("lab_signing_v2_scheme"), PreferenceValueType.BOOLEAN)
+        val LAB_SIGNING_V3_SCHEME = register(booleanPreferencesKey("lab_signing_v3_scheme"), PreferenceValueType.BOOLEAN)
+        val LAB_SIGNING_V4_SCHEME = register(booleanPreferencesKey("lab_signing_v4_scheme"), PreferenceValueType.BOOLEAN)
+        val LAB_SIGNING_ZIP_ALIGN = register(booleanPreferencesKey("lab_signing_zip_align"), PreferenceValueType.BOOLEAN)
             register(booleanPreferencesKey("lab_try_different_architecture"), PreferenceValueType.BOOLEAN)
 
         // Network
