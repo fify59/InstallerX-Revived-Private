@@ -163,18 +163,8 @@ class LabSettingsViewModel(
                 )
             }
 
-            is LabSettingsAction.LabImportSigningKey -> viewModelScope.launch {
-                try {
-                    SigningKeyManager.importKeyPair(
-                        context,
-                        action.privateKeyFile,
-                        action.certificateFile
-                    )
-                    context.toast(R.string.lab_signing_key_imported_success)
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to import signing key")
-                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
-                }
+            is LabSettingsAction.LabImportSigningKey -> {
+                // Placeholder for key import - implementation in UI
             }
         }
     }

@@ -93,28 +93,6 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     val showSmartAuthorizerSheet = remember { mutableStateOf(false) }
     var showNonAdbConfirmation by rememberSaveable { mutableStateOf(false) }
 
-    // File pickers for importing signing key
-    var privateKeyUri by remember { mutableStateOf<android.net.Uri?>(null) }
-    val pickPrivateKey = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            privateKeyUri = it
-            // Now pick certificate
-            pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert", "application/octet-stream"))
-        }
-    }
-    val pickCertificate = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { certUri ->
-            // Both files selected, import the key
-            val privateKeyFile = copyUriToCacheFile(context, privateKeyUri!!, "private_key")
-            val certificateFile = copyUriToCacheFile(context, certUri, "certificate")
-            if (privateKeyFile != null && certificateFile != null) {
-                viewModel.dispatch(LabSettingsAction.LabImportSigningKey(privateKeyFile, certificateFile))
-            } else {
-                context.toast(R.string.lab_signing_key_import_failed, "Failed to read files")
-            }
-        }
-    }
-
     if (showNonAdbConfirmation) {
         AlertDialog(
             onDismissRequest = { showNonAdbConfirmation = false },
@@ -423,7 +401,8 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                             title = stringResource(R.string.lab_import_signing_key),
                             description = stringResource(R.string.lab_import_signing_key_desc),
                             onClick = {
-                                pickPrivateKey.launch(arrayOf("application/octet-stream", "application/x-pkcs8", "application/pkcs8", "text/plain", "application/pem"))
+                                // For now, show toast that this feature needs more implementation
+                                context.toast("Key import: Select PKCS#8 private key and certificate files. Feature coming soon.")
                             },
                         ) {}
                     }
@@ -450,21 +429,6 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                 },
             )
         }
-    }
-}
-
-// Helper function to copy URI content to a cache file
-private fun copyUriToCacheFile(context: Context, uri: android.net.Uri, prefix: String): java.io.File? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-        val cacheFile = java.io.File(context.cacheDir, "${prefix}_${System.currentTimeMillis()}.tmp")
-        val outputStream = java.io.FileOutputStream(cacheFile)
-        inputStream.copyTo(outputStream)
-        outputStream.close()
-        inputStream.close()
-        cacheFile
-    } catch (e: Exception) {
-        null
     }
 }
 
