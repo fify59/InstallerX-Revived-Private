@@ -422,6 +422,7 @@
     <string name="confirm">确认</string>
     <string name="pre_approve">预批准</string>
     <string name="cancel">取消</string>
+    <string name="ok">确定</string>
     <string name="retry">重试</string>
     <string name="install">安装</string>
     <string name="upgrade">升级</string>

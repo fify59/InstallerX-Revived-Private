@@ -433,6 +433,7 @@
     <string name="confirm">Confirm</string>
     <string name="pre_approve">Pre-approve</string>
     <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
     <string name="retry">Retry</string>
     <string name="install">Install</string>
     <string name="upgrade">Upgrade</string>
