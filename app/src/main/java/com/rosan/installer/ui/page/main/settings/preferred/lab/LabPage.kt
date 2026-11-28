@@ -7,13 +7,6 @@ package com.rosan.installer.ui.page.main.settings.preferred.lab
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.ExposedDropdownMenu
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.MenuItem
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TextInputLayout
-import androidx.compose.material3.TrailingIcon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -161,15 +154,6 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
         }
     }
     val pickPkcs12 = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
-
-    // File picker for keystore files (JKS, BKS, PKCS12)
-    val pickKeyStore = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            keyStoreFileUri = it
-            // Show the keystore import dialog with the selected file
-            showImportKeyStoreDialog = true
-        }
-    }
         uri?.let {
             val pkcs12File = copyUriToCacheFile(context, it, "keystore")
             if (pkcs12File != null) {
@@ -184,6 +168,15 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
             } else {
                 context.toast(R.string.lab_signing_key_import_failed, "Failed to read file")
             }
+        }
+    }
+
+    // File picker for keystore files (JKS, BKS, PKCS12)
+    val pickKeyStore = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            keyStoreFileUri = it
+            // Show the keystore import dialog with the selected file
+            showImportKeyStoreDialog = true
         }
     }
 
@@ -214,106 +207,8 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
         RootImplementationSelectionDialog(
             currentSelection = uiState.labRootMode,
             onDismiss = { showRootImplementationDialog.value = false },
-
-    // Keystore Import Dialog (AppManagerNG style)
-    if (showImportKeyStoreDialog) {
-        KeyStoreImportDialog(
-            onDismiss = { showImportKeyStoreDialog = false },
-            onTypeChange = { keyStoreType = it },
-            onFileClick = { pickKeyStore.launch(arrayOf("application/*")) },
-            onConfirm = {
-                keyStoreFileUri?.let { uri ->
-                    val file = copyUriToCacheFile(context, uri, "keystore")
-                    if (file != null) {
-                        keyStorePendingPassword = keyStorePassword
-                        pendingKeyStoreImport = file to keyStoreType
-                        loadKeyStoreAliases(context, file, keyStoreType, keyStorePassword)
-                    } else {
-                        context.toast(R.string.lab_failed_to_read_keystore, "Failed to read file")
-                    }
-                }
-            },
-            keyStoreType = keyStoreType,
-            keyStorePassword = keyStorePassword,
-            onPasswordChange = { keyStorePassword = it },
-            onFileSelected = { keyStoreFileUri != null },
-            stringResource = { stringResource(it) },
-        )
-    }
-
-    // Alias Selection Dialog
-    if (showKeyStoreAliasDialog) {
-        KeyStoreAliasDialog(
-            onDismiss = { showKeyStoreAliasDialog = false },
-            aliases = keyStoreAliases,
-            onConfirm = { alias, keyPassword ->
-                pendingKeyStoreImport?.let { (file, type) ->
-                    viewModel.dispatch(LabSettingsAction.LabImportKeyStore(
-                        keyStoreFile = file,
-                        keyStorePassword = keyStorePendingPassword,
-                        keyType = type,
-                        alias = alias,
-                        keyPassword = keyPassword.ifEmpty { null },
-                    ))
-                }
-                keyStoreAliases = emptyList()
-                keyStorePendingPassword = ""
-                pendingKeyStoreImport = null
-            },
-            stringResource = { stringResource(it) },
-        )
-    }
             onConfirm = { selectedImplementation ->
                 showRootImplementationDialog.value = false
-
-    // Keystore Import Dialog (AppManagerNG style)
-    if (showImportKeyStoreDialog) {
-        KeyStoreImportDialog(
-            onDismiss = { showImportKeyStoreDialog = false },
-            onTypeChange = { keyStoreType = it },
-            onFileClick = { pickKeyStore.launch(arrayOf("application/*")) },
-            onConfirm = {
-                keyStoreFileUri?.let { uri ->
-                    val file = copyUriToCacheFile(context, uri, "keystore")
-                    if (file != null) {
-                        keyStorePendingPassword = keyStorePassword
-                        pendingKeyStoreImport = file to keyStoreType
-                        loadKeyStoreAliases(context, file, keyStoreType, keyStorePassword)
-                    } else {
-                        context.toast(R.string.lab_failed_to_read_keystore, "Failed to read file")
-                    }
-                }
-            },
-            keyStoreType = keyStoreType,
-            keyStorePassword = keyStorePassword,
-            onPasswordChange = { keyStorePassword = it },
-            onFileSelected = { keyStoreFileUri != null },
-            stringResource = { stringResource(it) },
-        )
-    }
-
-    // Alias Selection Dialog
-    if (showKeyStoreAliasDialog) {
-        KeyStoreAliasDialog(
-            onDismiss = { showKeyStoreAliasDialog = false },
-            aliases = keyStoreAliases,
-            onConfirm = { alias, keyPassword ->
-                pendingKeyStoreImport?.let { (file, type) ->
-                    viewModel.dispatch(LabSettingsAction.LabImportKeyStore(
-                        keyStoreFile = file,
-                        keyStorePassword = keyStorePendingPassword,
-                        keyType = type,
-                        alias = alias,
-                        keyPassword = keyPassword.ifEmpty { null },
-                    ))
-                }
-                keyStoreAliases = emptyList()
-                keyStorePendingPassword = ""
-                pendingKeyStoreImport = null
-            },
-            stringResource = { stringResource(it) },
-        )
-    }
                 // 1. Save the selected implementation
                 viewModel.dispatch(
                     LabSettingsAction.LabChangeRootImplementation(
@@ -323,6 +218,71 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                 // 2. Enable the flash module feature
                 viewModel.dispatch(LabSettingsAction.LabChangeRootModuleFlash(true))
             },
+        )
+    }
+
+    // Keystore Import Dialog (AppManagerNG style)
+    if (showImportKeyStoreDialog) {
+        KeyStoreImportDialog(
+            onDismiss = { showImportKeyStoreDialog = false },
+            onTypeChange = { keyStoreType = it },
+            onFileClick = { pickKeyStore.launch(arrayOf("application/*")) },
+            onConfirm = {
+                keyStoreFileUri?.let { uri ->
+                    val file = copyUriToCacheFile(context, uri, "keystore")
+                    if (file != null) {
+                        keyStorePendingPassword = keyStorePassword
+                        pendingKeyStoreImport = file to keyStoreType
+                        loadKeyStoreAliases(
+                            context = context,
+                            file = file,
+                            keyType = keyStoreType,
+                            password = keyStorePassword,
+                            onResult = { aliases ->
+                                keyStoreAliases = aliases
+                                if (aliases.isEmpty()) {
+                                    context.toast(R.string.lab_found_no_alias_in_keystore, "No key entries found")
+                                } else {
+                                    showKeyStoreAliasDialog = true
+                                }
+                            },
+                            onError = { error ->
+                                context.toast(R.string.lab_failed_to_read_keystore, error)
+                            }
+                        )
+                    } else {
+                        context.toast(R.string.lab_failed_to_read_keystore, "Failed to read file")
+                    }
+                }
+            },
+            keyStoreType = keyStoreType,
+            keyStorePassword = keyStorePassword,
+            onPasswordChange = { keyStorePassword = it },
+            onFileSelected = { keyStoreFileUri != null },
+            stringResource = { stringResource(it) },
+        )
+    }
+
+    // Alias Selection Dialog
+    if (showKeyStoreAliasDialog) {
+        KeyStoreAliasDialog(
+            onDismiss = { showKeyStoreAliasDialog = false },
+            aliases = keyStoreAliases,
+            onConfirm = { alias, keyPassword ->
+                pendingKeyStoreImport?.let { (file, type) ->
+                    viewModel.dispatch(LabSettingsAction.LabImportKeyStore(
+                        keyStoreFile = file,
+                        keyStorePassword = keyStorePendingPassword,
+                        keyType = type,
+                        alias = alias,
+                        keyPassword = keyPassword.ifEmpty { null },
+                    ))
+                }
+                keyStoreAliases = emptyList()
+                keyStorePendingPassword = ""
+                pendingKeyStoreImport = null
+            },
+            stringResource = { stringResource(it) },
         )
     }
 
@@ -604,6 +564,16 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                             description = stringResource(R.string.lab_import_pkcs12_desc),
                             onClick = {
                                 pickPkcs12.launch(arrayOf("application/x-pkcs12", "application/pkcs12", "application/octet-stream"))
+                            },
+                        ) {}
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        BaseWidget(
+                            icon = AppIcons.Import,
+                            title = stringResource(R.string.lab_import_keystore),
+                            description = stringResource(R.string.lab_import_keystore_desc),
+                            onClick = {
+                                pickKeyStore.launch(arrayOf("application/*"))
                             },
                         ) {}
                     }

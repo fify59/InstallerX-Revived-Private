@@ -12,7 +12,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -79,7 +78,7 @@ fun KeyStoreImportDialog(
                         onDismissRequest = { expanded = false },
                     ) {
                         keyTypes.forEachIndexed { index, type ->
-                            MenuItem(
+                            androidx.compose.material.MenuItem(
                                 onClick = {
                                     onTypeChange(index)
                                     expanded = false
@@ -169,7 +168,7 @@ fun KeyStoreAliasDialog(
                         onDismissRequest = { expanded = false },
                     ) {
                         aliases.forEach { alias ->
-                            MenuItem(
+                            androidx.compose.material.MenuItem(
                                 onClick = {
                                     selectedAlias = alias
                                     expanded = false
