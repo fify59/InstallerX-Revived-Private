@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material.MenuItem
+
 
 
 
@@ -85,7 +85,7 @@ fun KeyStoreImportDialog(
                         onDismissRequest = { expanded = false },
                     ) {
                         keyTypes.forEachIndexed { index, type ->
-                            MenuItem(
+                            androidx.compose.material.MenuItem(
                                 onClick = {
                                     onTypeChange(index)
                                     expanded = false
@@ -175,7 +175,7 @@ fun KeyStoreAliasDialog(
                         onDismissRequest = { expanded = false },
                     ) {
                         aliases.forEach { alias ->
-                            MenuItem(
+                            androidx.compose.material.MenuItem(
                                 onClick = {
                                     selectedAlias = alias
                                     expanded = false
