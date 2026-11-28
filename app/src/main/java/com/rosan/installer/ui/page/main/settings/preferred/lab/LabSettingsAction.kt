@@ -36,7 +36,7 @@ sealed interface LabSettingsAction {
         val password: String,
         val alias: String = "installerx_apk_signing_key",
     ) : LabSettingsAction
-    
+
     // AppManagerNG-style keystore import (JKS, BKS, PKCS12)
     data class LabImportKeyStore(
         val keyStoreFile: File,
@@ -45,6 +45,6 @@ sealed interface LabSettingsAction {
         val alias: String? = null,
         val keyPassword: String? = null,
     ) : LabSettingsAction
-    
+
     object LabClearImportedKey : LabSettingsAction
 }
