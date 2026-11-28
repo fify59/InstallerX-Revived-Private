@@ -67,9 +67,9 @@ import com.rosan.installer.domain.settings.model.preferences.RootMode
 import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerCandidate
 import com.rosan.installer.ui.icons.AppIcons
 import com.rosan.installer.ui.navigation.LocalNavigator
-import com.rosan.installer.ui.page.main.settings.preferred.lab.LabSettingsAction
 import com.rosan.installer.ui.page.main.settings.preferred.lab.KeyStoreAliasDialog
 import com.rosan.installer.ui.page.main.settings.preferred.lab.KeyStoreImportDialog
+import com.rosan.installer.ui.page.main.settings.preferred.lab.LabSettingsAction
 import com.rosan.installer.ui.page.main.settings.preferred.lab.loadKeyStoreAliases
 import com.rosan.installer.ui.page.main.widget.card.InfoTipCard
 import com.rosan.installer.ui.page.main.widget.dialog.RootImplementationSelectionDialog

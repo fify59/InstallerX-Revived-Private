@@ -25,12 +25,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rosan.installer.R
 import com.rosan.installer.data.engine.signature.SigningKeyManager
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.io.File
+import java.io.FileInputStream
 import java.security.KeyStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 @Composable
 fun KeyStoreImportDialog(
@@ -55,12 +56,15 @@ fun KeyStoreImportDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.lab_import_keystore)) },
         text = {
-            Column(modifier = Modifier.padding(24.dp).fillMaxWidth(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+            ) {
                 // Key Type Selector
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                     TextField(
                         value = keyTypes[keyStoreType],
-                        onValueChange = { },
+                        onValueChange = {},
                         label = { Text(stringResource(R.string.lab_select_type)) },
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon() },
@@ -72,7 +76,10 @@ fun KeyStoreImportDialog(
                     ) {
                         keyTypes.forEachIndexed { index, type ->
                             MenuItem(
-                                onClick = { onTypeChange(index); expanded = false },
+                                onClick = {
+                                    onTypeChange(index)
+                                    expanded = false
+                                },
                                 text = { Text(type) },
                             )
                         }
@@ -91,11 +98,13 @@ fun KeyStoreImportDialog(
                 // Keystore File
                 TextField(
                     value = if (onFileSelected) stringResource(R.string.lab_file_selected) else "",
-                    onValueChange = { },
+                    onValueChange = {},
                     label = { Text(stringResource(R.string.lab_keystore_file)) },
                     readOnly = true,
                     trailingIcon = {
-                        TextButton(onClick = onFileClick) {
+                        TextButton(
+                            onClick = onFileClick,
+                        ) {
                             Text(stringResource(R.string.lab_select))
                         }
                     },
@@ -104,12 +113,19 @@ fun KeyStoreImportDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(); onDismiss() }) {
+            TextButton(
+                onClick = {
+                    onConfirm()
+                    onDismiss()
+                },
+            ) {
                 Text(stringResource(R.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+            ) {
                 Text(stringResource(R.string.cancel))
             }
         },
@@ -130,12 +146,15 @@ fun KeyStoreAliasDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.lab_choose_an_alias)) },
         text = {
-            Column(modifier = Modifier.padding(24.dp).fillMaxWidth(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+            ) {
                 // Alias Selector
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                     TextField(
                         value = selectedAlias,
-                        onValueChange = { },
+                        onValueChange = {},
                         label = { Text(stringResource(R.string.lab_choose_an_alias)) },
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon() },
@@ -147,7 +166,10 @@ fun KeyStoreAliasDialog(
                     ) {
                         aliases.forEach { alias ->
                             MenuItem(
-                                onClick = { selectedAlias = alias; expanded = false },
+                                onClick = {
+                                    selectedAlias = alias
+                                    expanded = false
+                                },
                                 text = { Text(alias) },
                             )
                         }
@@ -165,12 +187,19 @@ fun KeyStoreAliasDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(selectedAlias, keyPassword); onDismiss() }) {
+            TextButton(
+                onClick = {
+                    onConfirm(selectedAlias, keyPassword)
+                    onDismiss()
+                },
+            ) {
                 Text(stringResource(R.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+            ) {
                 Text(stringResource(R.string.cancel))
             }
         },
