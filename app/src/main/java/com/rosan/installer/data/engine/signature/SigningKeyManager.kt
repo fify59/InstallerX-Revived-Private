@@ -19,7 +19,7 @@ import java.security.PrivateKey
 import java.security.SecureRandom
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.security.spec.AlgorithmParameters as JAlgorithmParameters
+import java.security.spec.AlgorithmParameters
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Date
 import javax.crypto.Cipher
@@ -210,7 +210,7 @@ object SigningKeyManager {
                 val key = SecretKeyFactory.getInstance(algName)
                     .generateSecret(PBEKeySpec(password.toCharArray()))
                 val algParamsMethod = encryptedPkcs8Class.getMethod("getAlgParameters")
-                val algParams = algParamsMethod.invoke(pkcs8Spec) as JAlgorithmParameters
+                val algParams = algParamsMethod.invoke(pkcs8Spec) as AlgorithmParameters
                 cipher.init(
                     Cipher.DECRYPT_MODE,
                     SecretKeyFactory.getInstance(algName)
