@@ -273,6 +273,8 @@ dependencies {
 
     // okhttp
     implementation(platform(libs.okhttp.bom))
+    // BouncyCastle for JKS/BKS keystore support
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
     implementation(libs.okhttp)
 
     // monetcompat

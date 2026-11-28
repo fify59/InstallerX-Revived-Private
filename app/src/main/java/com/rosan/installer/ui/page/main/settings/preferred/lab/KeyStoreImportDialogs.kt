@@ -3,6 +3,10 @@
 package com.rosan.installer.ui.page.main.settings.preferred.lab
 
 import android.content.Context
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.PasswordVisualTransformation
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExposedDropdownMenu
@@ -58,7 +62,7 @@ fun KeyStoreImportDialog(
         text = {
             Column(
                 modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // Key Type Selector
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
@@ -148,7 +152,7 @@ fun KeyStoreAliasDialog(
         text = {
             Column(
                 modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // Alias Selector
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
