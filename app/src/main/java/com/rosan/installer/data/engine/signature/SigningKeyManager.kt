@@ -17,6 +17,7 @@ import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.PrivateKey
 import java.security.SecureRandom
+import java.security.AlgorithmParameters
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
@@ -209,7 +210,7 @@ object SigningKeyManager {
                 val key = SecretKeyFactory.getInstance(algName)
                     .generateSecret(PBEKeySpec(password.toCharArray()))
                 val algParamsMethod = encryptedPkcs8Class.getMethod("getAlgParameters")
-                val algParams = algParamsMethod.invoke(pkcs8Spec)
+                val algParams = algParamsMethod.invoke(pkcs8Spec) as AlgorithmParameters
                 cipher.init(
                     Cipher.DECRYPT_MODE,
                     SecretKeyFactory.getInstance(algName)
