@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.PasswordVisualTransformation
+import androidx.compose.material3.TextFieldDefaults
 
 
 import androidx.compose.material3.AlertDialog
@@ -98,7 +98,7 @@ fun KeyStoreImportDialog(
                     value = keyStorePassword,
                     onValueChange = onPasswordChange,
                     label = { Text(stringResource(R.string.lab_keystore_pass)) },
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = TextFieldDefaults.PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -188,7 +188,7 @@ fun KeyStoreAliasDialog(
                     value = keyPassword,
                     onValueChange = { keyPassword = it },
                     label = { Text(stringResource(R.string.lab_alias_pass)) },
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = TextFieldDefaults.PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
