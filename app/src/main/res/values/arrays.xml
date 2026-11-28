@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="crypto_import_types">
+        <!-- The order must be preserved -->
+        <item>@string/lab_java_keystore</item>
+        <item>@string/lab_pkcs12_keystore</item>
+        <item>@string/lab_bouncy_castle_keystore</item>
+        <item>@string/lab_pem_and_pk8</item>
+    </string-array>
+</resources>

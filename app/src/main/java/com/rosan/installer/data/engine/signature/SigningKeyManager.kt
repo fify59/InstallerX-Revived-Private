@@ -17,7 +17,9 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.SecureRandom
+import java.security.Security
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
@@ -26,6 +28,7 @@ import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.security.auth.x500.X500Principal
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 
 /**
  * Manages the APK signing key pair.
@@ -43,6 +46,13 @@ object SigningKeyManager {
     private var importedPrivateKey: PrivateKey? = null
     private var importedCertificate: X509Certificate? = null
     private var importedAlias: String? = null
+
+    // Initialize BouncyCastle provider for JKS/BKS support
+    init {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(BouncyCastleProvider())
+        }
+    }
 
     /**
      * Gets or creates the signing key pair.
@@ -146,8 +156,8 @@ object SigningKeyManager {
         password: String,
         alias: String = DEFAULT_KEY_ALIAS,
     ): Pair<PrivateKey, X509Certificate> {
-        // Load PKCS#12
-        val pkcs12Store = KeyStore.getInstance("PKCS12")
+        // Load PKCS#12 using BouncyCastle provider
+        val pkcs12Store = KeyStore.getInstance("PKCS12", BouncyCastleProvider())
         FileInputStream(pkcs12File).use { input ->
             pkcs12Store.load(input, password.toCharArray())
         }
@@ -179,6 +189,135 @@ object SigningKeyManager {
         importedAlias = alias
 
         return privateKey to certificate
+    }
+
+    /**
+     * Imports a key pair from a JKS keystore file (.jks)
+     * Supports password-protected JKS files with multiple entries.
+     * Uses the first private key entry found, or the specified alias.
+     *
+     * @param context Application context
+     * @param jksFile File containing the JKS keystore
+     * @param password Password for the JKS file
+     * @param alias Alias of the key entry to use (optional, uses first found if not specified)
+     * @param keyPassword Password for the specific key entry (optional, uses keystore password if not specified)
+     */
+    @Throws(Exception::class)
+    fun importFromJks(
+        context: Context,
+        jksFile: File,
+        password: String,
+        alias: String? = null,
+        keyPassword: String? = null,
+    ): Pair<PrivateKey, X509Certificate> {
+        // Load JKS using JavaKeyStore provider
+        val jksStore = KeyStore.getInstance("JKS")
+        FileInputStream(jksFile).use { input ->
+            jksStore.load(input, password.toCharArray())
+        }
+
+        // Find the key entry
+        val keyAlias = alias ?: jksStore.aliases().asSequence().firstOrNull { jksStore.isKeyEntry(it) }
+            ?: throw IllegalArgumentException("No key entry found in JKS file")
+
+        if (!jksStore.isKeyEntry(keyAlias)) {
+            throw IllegalArgumentException("Alias '$keyAlias' is not a key entry in JKS file")
+        }
+
+        val keyPass = keyPassword ?: password
+        val privateKey = jksStore.getKey(keyAlias, keyPass.toCharArray()) as PrivateKey?
+        val certChain = jksStore.getCertificateChain(keyAlias)
+
+        if (privateKey == null || certChain.isEmpty()) {
+            throw IllegalArgumentException("No valid key entry found for alias '$keyAlias' in JKS file")
+        }
+
+        val certificate = certChain[0] as X509Certificate
+
+        // Store in memory with specified alias
+        importedPrivateKey = privateKey
+        importedCertificate = certificate
+        importedAlias = alias ?: keyAlias
+
+        return privateKey to certificate
+    }
+
+    /**
+     * Imports a key pair from a BKS keystore file (.bks)
+     * Supports password-protected BKS files with multiple entries.
+     * Uses the first private key entry found, or the specified alias.
+     *
+     * @param context Application context
+     * @param bksFile File containing the BKS keystore
+     * @param password Password for the BKS file
+     * @param alias Alias of the key entry to use (optional, uses first found if not specified)
+     * @param keyPassword Password for the specific key entry (optional, uses keystore password if not specified)
+     */
+    @Throws(Exception::class)
+    fun importFromBks(
+        context: Context,
+        bksFile: File,
+        password: String,
+        alias: String? = null,
+        keyPassword: String? = null,
+    ): Pair<PrivateKey, X509Certificate> {
+        // Load BKS using BouncyCastle provider
+        val bksStore = KeyStore.getInstance("BKS", BouncyCastleProvider())
+        FileInputStream(bksFile).use { input ->
+            bksStore.load(input, password.toCharArray())
+        }
+
+        // Find the key entry
+        val keyAlias = alias ?: bksStore.aliases().asSequence().firstOrNull { bksStore.isKeyEntry(it) }
+            ?: throw IllegalArgumentException("No key entry found in BKS file")
+
+        if (!bksStore.isKeyEntry(keyAlias)) {
+            throw IllegalArgumentException("Alias '$keyAlias' is not a key entry in BKS file")
+        }
+
+        val keyPass = keyPassword ?: password
+        val privateKey = bksStore.getKey(keyAlias, keyPass.toCharArray()) as PrivateKey?
+        val certChain = bksStore.getCertificateChain(keyAlias)
+
+        if (privateKey == null || certChain.isEmpty()) {
+            throw IllegalArgumentException("No valid key entry found for alias '$keyAlias' in BKS file")
+        }
+
+        val certificate = certChain[0] as X509Certificate
+
+        // Store in memory with specified alias
+        importedPrivateKey = privateKey
+        importedCertificate = certificate
+        importedAlias = alias ?: keyAlias
+
+        return privateKey to certificate
+    }
+
+    /**
+     * Generic method to import from any keystore file (JKS, BKS, PKCS12)
+     * Auto-detects the keystore type based on file extension.
+     *
+     * @param context Application context
+     * @param keyStoreFile File containing the keystore
+     * @param password Password for the keystore file
+     * @param alias Alias of the key entry to use (optional)
+     * @param keyPassword Password for the specific key entry (optional)
+     */
+    @Throws(Exception::class)
+    fun importFromKeyStore(
+        context: Context,
+        keyStoreFile: File,
+        password: String,
+        alias: String? = null,
+        keyPassword: String? = null,
+    ): Pair<PrivateKey, X509Certificate> {
+        val extension = keyStoreFile.extension.lowercase()
+        return when (extension) {
+            "jks" -> importFromJks(context, keyStoreFile, password, alias, keyPassword)
+            "bks" -> importFromBks(context, keyStoreFile, password, alias, keyPassword)
+            "p12", "pfx" -> importFromPkcs12(context, keyStoreFile, password, alias ?: DEFAULT_KEY_ALIAS)
+            else -> throw IllegalArgumentException("Unsupported keystore format: .$extension. Supported formats: .jks, .bks, .p12, .pfx")
+        }
     }
 
     private fun readPrivateKey(file: File, password: String?): PrivateKey {

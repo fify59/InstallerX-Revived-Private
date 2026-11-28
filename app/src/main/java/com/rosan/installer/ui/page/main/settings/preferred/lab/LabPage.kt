@@ -7,6 +7,13 @@ package com.rosan.installer.ui.page.main.settings.preferred.lab
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.MenuItem
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextInputLayout
+import androidx.compose.material3.TrailingIcon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,6 +68,9 @@ import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerCand
 import com.rosan.installer.ui.icons.AppIcons
 import com.rosan.installer.ui.navigation.LocalNavigator
 import com.rosan.installer.ui.page.main.settings.preferred.lab.LabSettingsAction
+import com.rosan.installer.ui.page.main.settings.preferred.lab.KeyStoreAliasDialog
+import com.rosan.installer.ui.page.main.settings.preferred.lab.KeyStoreImportDialog
+import com.rosan.installer.ui.page.main.settings.preferred.lab.loadKeyStoreAliases
 import com.rosan.installer.ui.page.main.widget.card.InfoTipCard
 import com.rosan.installer.ui.page.main.widget.dialog.RootImplementationSelectionDialog
 import com.rosan.installer.ui.page.main.widget.setting.BaseWidget
@@ -104,6 +114,18 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     var importPassword by remember { mutableStateOf("") }
     var pendingImportAction by remember { mutableStateOf<LabSettingsAction?>(null) }
 
+    // State for keystore import dialog (AppManagerNG style)
+    var showImportKeyStoreDialog by remember { mutableStateOf(false) }
+    var keyStoreType by remember { mutableStateOf(0) } // 0=JKS, 1=PKCS12, 2=BKS, 3=PK8/PEM
+    var keyStoreFileUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var keyStorePassword by remember { mutableStateOf("") }
+    var keyStoreAlias by remember { mutableStateOf("") }
+    var keyStoreKeyPassword by remember { mutableStateOf("") }
+    var keyStoreAliases by remember { mutableStateOf<List<String>>(emptyList()) }
+    var showKeyStoreAliasDialog by remember { mutableStateOf(false) }
+    var pendingKeyStoreImport by remember { mutableStateOf<Pair<java.io.File, Int>?>(null) }
+    var keyStorePendingPassword by remember { mutableStateOf("") }
+
     // Check if custom key is imported (read once and memoize)
     val hasCustomKey by remember { mutableStateOf(SigningKeyManager.hasCustomKey()) }
 
@@ -139,6 +161,15 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
         }
     }
     val pickPkcs12 = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
+
+    // File picker for keystore files (JKS, BKS, PKCS12)
+    val pickKeyStore = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            keyStoreFileUri = it
+            // Show the keystore import dialog with the selected file
+            showImportKeyStoreDialog = true
+        }
+    }
         uri?.let {
             val pkcs12File = copyUriToCacheFile(context, it, "keystore")
             if (pkcs12File != null) {
@@ -183,8 +214,106 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
         RootImplementationSelectionDialog(
             currentSelection = uiState.labRootMode,
             onDismiss = { showRootImplementationDialog.value = false },
+
+    // Keystore Import Dialog (AppManagerNG style)
+    if (showImportKeyStoreDialog) {
+        KeyStoreImportDialog(
+            onDismiss = { showImportKeyStoreDialog = false },
+            onTypeChange = { keyStoreType = it },
+            onFileClick = { pickKeyStore.launch(arrayOf("application/*")) },
+            onConfirm = {
+                keyStoreFileUri?.let { uri ->
+                    val file = copyUriToCacheFile(context, uri, "keystore")
+                    if (file != null) {
+                        keyStorePendingPassword = keyStorePassword
+                        pendingKeyStoreImport = file to keyStoreType
+                        loadKeyStoreAliases(context, file, keyStoreType, keyStorePassword)
+                    } else {
+                        context.toast(R.string.lab_failed_to_read_keystore, "Failed to read file")
+                    }
+                }
+            },
+            keyStoreType = keyStoreType,
+            keyStorePassword = keyStorePassword,
+            onPasswordChange = { keyStorePassword = it },
+            onFileSelected = { keyStoreFileUri != null },
+            stringResource = { stringResource(it) },
+        )
+    }
+
+    // Alias Selection Dialog
+    if (showKeyStoreAliasDialog) {
+        KeyStoreAliasDialog(
+            onDismiss = { showKeyStoreAliasDialog = false },
+            aliases = keyStoreAliases,
+            onConfirm = { alias, keyPassword ->
+                pendingKeyStoreImport?.let { (file, type) ->
+                    viewModel.dispatch(LabSettingsAction.LabImportKeyStore(
+                        keyStoreFile = file,
+                        keyStorePassword = keyStorePendingPassword,
+                        keyType = type,
+                        alias = alias,
+                        keyPassword = keyPassword.ifEmpty { null },
+                    ))
+                }
+                keyStoreAliases = emptyList()
+                keyStorePendingPassword = ""
+                pendingKeyStoreImport = null
+            },
+            stringResource = { stringResource(it) },
+        )
+    }
             onConfirm = { selectedImplementation ->
                 showRootImplementationDialog.value = false
+
+    // Keystore Import Dialog (AppManagerNG style)
+    if (showImportKeyStoreDialog) {
+        KeyStoreImportDialog(
+            onDismiss = { showImportKeyStoreDialog = false },
+            onTypeChange = { keyStoreType = it },
+            onFileClick = { pickKeyStore.launch(arrayOf("application/*")) },
+            onConfirm = {
+                keyStoreFileUri?.let { uri ->
+                    val file = copyUriToCacheFile(context, uri, "keystore")
+                    if (file != null) {
+                        keyStorePendingPassword = keyStorePassword
+                        pendingKeyStoreImport = file to keyStoreType
+                        loadKeyStoreAliases(context, file, keyStoreType, keyStorePassword)
+                    } else {
+                        context.toast(R.string.lab_failed_to_read_keystore, "Failed to read file")
+                    }
+                }
+            },
+            keyStoreType = keyStoreType,
+            keyStorePassword = keyStorePassword,
+            onPasswordChange = { keyStorePassword = it },
+            onFileSelected = { keyStoreFileUri != null },
+            stringResource = { stringResource(it) },
+        )
+    }
+
+    // Alias Selection Dialog
+    if (showKeyStoreAliasDialog) {
+        KeyStoreAliasDialog(
+            onDismiss = { showKeyStoreAliasDialog = false },
+            aliases = keyStoreAliases,
+            onConfirm = { alias, keyPassword ->
+                pendingKeyStoreImport?.let { (file, type) ->
+                    viewModel.dispatch(LabSettingsAction.LabImportKeyStore(
+                        keyStoreFile = file,
+                        keyStorePassword = keyStorePendingPassword,
+                        keyType = type,
+                        alias = alias,
+                        keyPassword = keyPassword.ifEmpty { null },
+                    ))
+                }
+                keyStoreAliases = emptyList()
+                keyStorePendingPassword = ""
+                pendingKeyStoreImport = null
+            },
+            stringResource = { stringResource(it) },
+        )
+    }
                 // 1. Save the selected implementation
                 viewModel.dispatch(
                     LabSettingsAction.LabChangeRootImplementation(

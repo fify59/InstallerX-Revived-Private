@@ -196,6 +196,39 @@ class LabSettingsViewModel(
                 }
             }
 
+            // AppManagerNG-style keystore import (JKS, BKS, PKCS12)
+            is LabSettingsAction.LabImportKeyStore -> viewModelScope.launch {
+                try {
+                    when (action.keyType) {
+                        0 -> SigningKeyManager.importFromJks(
+                            context,
+                            action.keyStoreFile,
+                            action.keyStorePassword,
+                            action.alias,
+                            action.keyPassword,
+                        )
+                        1 -> SigningKeyManager.importFromPkcs12(
+                            context,
+                            action.keyStoreFile,
+                            action.keyStorePassword,
+                            action.alias ?: "installerx_apk_signing_key",
+                        )
+                        2 -> SigningKeyManager.importFromBks(
+                            context,
+                            action.keyStoreFile,
+                            action.keyStorePassword,
+                            action.alias,
+                            action.keyPassword,
+                        )
+                        else -> throw IllegalArgumentException("Unsupported key type: ${action.keyType}")
+                    }
+                    context.toast(R.string.lab_signing_key_imported_success, action.alias ?: "installerx_apk_signing_key")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to import keystore")
+                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
+                }
+            }
+
             is LabSettingsAction.LabClearImportedKey -> {
                 SigningKeyManager.clearImportedKey()
                 context.toast(R.string.lab_signing_key_cleared)
