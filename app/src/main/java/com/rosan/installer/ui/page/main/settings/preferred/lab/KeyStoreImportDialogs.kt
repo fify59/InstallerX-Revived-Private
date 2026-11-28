@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.PasswordVisualTransformation
 
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuItem
 
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -80,7 +82,7 @@ fun KeyStoreImportDialog(
                         onDismissRequest = { expanded = false },
                     ) {
                         keyTypes.forEachIndexed { index, type ->
-                            androidx.compose.material3.MenuItem(
+                            MenuItem(
                                 onClick = {
                                     onTypeChange(index)
                                     expanded = false
@@ -96,7 +98,7 @@ fun KeyStoreImportDialog(
                     value = keyStorePassword,
                     onValueChange = onPasswordChange,
                     label = { Text(stringResource(R.string.lab_keystore_pass)) },
-                    visualTransformation = androidx.compose.foundation.text.PasswordVisualTransformation(),
+                    visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -170,7 +172,7 @@ fun KeyStoreAliasDialog(
                         onDismissRequest = { expanded = false },
                     ) {
                         aliases.forEach { alias ->
-                            androidx.compose.material3.MenuItem(
+                            MenuItem(
                                 onClick = {
                                     selectedAlias = alias
                                     expanded = false
@@ -186,7 +188,7 @@ fun KeyStoreAliasDialog(
                     value = keyPassword,
                     onValueChange = { keyPassword = it },
                     label = { Text(stringResource(R.string.lab_alias_pass)) },
-                    visualTransformation = androidx.compose.foundation.text.PasswordVisualTransformation(),
+                    visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
