@@ -58,6 +58,7 @@ import com.rosan.installer.domain.settings.model.config.Authorizer
 import com.rosan.installer.domain.settings.model.preferences.RootMode
 import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerCandidate
 import com.rosan.installer.ui.icons.AppIcons
+import com.rosan.installer.data.engine.signature.SigningKeyManager
 import com.rosan.installer.ui.navigation.LocalNavigator
 import com.rosan.installer.ui.page.main.settings.preferred.lab.LabSettingsAction
 import com.rosan.installer.ui.page.main.widget.card.InfoTipCard
@@ -109,7 +110,7 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     // File pickers for importing signing key
     var privateKeyUri by remember { mutableStateOf<android.net.Uri?>(null) }
     // Define pickCertificate first so it can be used in pickPrivateKey
-    val pickCertificate = rememberLauncherForActivityResult<android.net.Uri?, Unit>(ActivityResultContracts.OpenDocument()) { uri ->
+    val pickCertificate = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { certUri ->
             // Both files selected, show alias/password dialog
             val privateKeyFile = copyUriToCacheFile(context, privateKeyUri!!, "private_key")
@@ -130,14 +131,14 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
             }
         }
     }
-    val pickPrivateKey = rememberLauncherForActivityResult<android.net.Uri?, Unit>(ActivityResultContracts.OpenDocument()) { uri ->
+    val pickPrivateKey = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
             privateKeyUri = it
             // Now pick certificate
             pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert", "application/octet-stream"))
         }
     }
-    val pickPkcs12 = rememberLauncherForActivityResult<android.net.Uri?, Unit>(ActivityResultContracts.OpenDocument()) { uri ->
+    val pickPkcs12 = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
             val pkcs12File = copyUriToCacheFile(context, it, "keystore")
             if (pkcs12File != null) {

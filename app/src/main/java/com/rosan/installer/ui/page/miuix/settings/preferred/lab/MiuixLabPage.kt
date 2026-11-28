@@ -51,6 +51,7 @@ import com.rosan.installer.domain.settings.model.preferences.RootMode
 import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerCandidate
 import com.rosan.installer.ui.navigation.LocalNavigator
 import com.rosan.installer.ui.page.main.settings.preferred.lab.LabSettingsAction
+import com.rosan.installer.data.engine.signature.SigningKeyManager
 import com.rosan.installer.ui.page.main.settings.preferred.lab.LabSettingsViewModel
 import com.rosan.installer.ui.page.miuix.widgets.InstallerMiuixBackButton
 import com.rosan.installer.ui.page.miuix.widgets.InstallerMiuixBackdropSurface
