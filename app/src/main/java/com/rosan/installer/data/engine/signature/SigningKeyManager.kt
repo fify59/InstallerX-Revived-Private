@@ -210,6 +210,7 @@ object SigningKeyManager {
                     .generateSecret(PBEKeySpec(password.toCharArray()))
                 val algParamsMethod = encryptedPkcs8Class.getMethod("getAlgParameters")
                 val algParams = algParamsMethod.invoke(pkcs8Spec) as java.security.spec.AlgorithmParameters
+                cipher.init(
                     Cipher.DECRYPT_MODE,
                     SecretKeyFactory.getInstance(algName)
                         .generateSecret(PBEKeySpec(password.toCharArray())),
