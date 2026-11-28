@@ -219,6 +219,7 @@ dependencies {
     implementation(libs.compose.ui.graphics)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
+    implementation("androidx.compose.material:material:1.7.5")
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     // implementation(libs.androidx.navigation3.runtime)
@@ -273,6 +274,8 @@ dependencies {
 
     // okhttp
     implementation(platform(libs.okhttp.bom))
+    // BouncyCastle for JKS/BKS keystore support
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
     implementation(libs.okhttp)
 
     // monetcompat

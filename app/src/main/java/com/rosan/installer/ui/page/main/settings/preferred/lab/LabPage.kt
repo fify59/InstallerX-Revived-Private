@@ -4,6 +4,9 @@
 
 package com.rosan.installer.ui.page.main.settings.preferred.lab
 
+import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rosan.installer.R
 import com.rosan.installer.core.env.AppConfig
+import com.rosan.installer.data.engine.signature.SigningKeyManager
 import com.rosan.installer.domain.device.model.ShizukuMode
 import com.rosan.installer.domain.device.provider.DeviceCapabilityProvider
 import com.rosan.installer.domain.settings.model.config.Authorizer
@@ -56,6 +60,10 @@ import com.rosan.installer.domain.settings.model.preferences.RootMode
 import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerCandidate
 import com.rosan.installer.ui.icons.AppIcons
 import com.rosan.installer.ui.navigation.LocalNavigator
+import com.rosan.installer.ui.page.main.settings.preferred.lab.KeyStoreAliasDialog
+import com.rosan.installer.ui.page.main.settings.preferred.lab.KeyStoreImportDialog
+import com.rosan.installer.ui.page.main.settings.preferred.lab.LabSettingsAction
+import com.rosan.installer.ui.page.main.settings.preferred.lab.loadKeyStoreAliases
 import com.rosan.installer.ui.page.main.widget.card.InfoTipCard
 import com.rosan.installer.ui.page.main.widget.dialog.RootImplementationSelectionDialog
 import com.rosan.installer.ui.page.main.widget.setting.BaseWidget
@@ -91,6 +99,86 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
     val showRootImplementationDialog = remember { mutableStateOf(false) }
     val showSmartAuthorizerSheet = remember { mutableStateOf(false) }
     var showNonAdbConfirmation by rememberSaveable { mutableStateOf(false) }
+
+    // State for import key dialog
+    var showImportKeyDialog by remember { mutableStateOf(false) }
+    var showImportPkcs12Dialog by remember { mutableStateOf(false) }
+    var importAlias by remember { mutableStateOf("installerx_apk_signing_key") }
+    var importPassword by remember { mutableStateOf("") }
+    var pendingImportAction by remember { mutableStateOf<LabSettingsAction?>(null) }
+
+    // State for keystore import dialog (AppManagerNG style)
+    var showImportKeyStoreDialog by remember { mutableStateOf(false) }
+    var keyStoreType by remember { mutableStateOf(0) } // 0=JKS, 1=PKCS12, 2=BKS, 3=PK8/PEM
+    var keyStoreFileUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var keyStorePassword by remember { mutableStateOf("") }
+    var keyStoreAlias by remember { mutableStateOf("") }
+    var keyStoreKeyPassword by remember { mutableStateOf("") }
+    var keyStoreAliases by remember { mutableStateOf<List<String>>(emptyList()) }
+    var showKeyStoreAliasDialog by remember { mutableStateOf(false) }
+    var pendingKeyStoreImport by remember { mutableStateOf<Pair<java.io.File, Int>?>(null) }
+    var keyStorePendingPassword by remember { mutableStateOf("") }
+
+    // Check if custom key is imported (read once and memoize)
+    val hasCustomKey by remember { mutableStateOf(SigningKeyManager.hasCustomKey()) }
+
+    // File pickers for importing signing key
+    var privateKeyUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    // Define pickCertificate first so it can be used in pickPrivateKey
+    val pickCertificate = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { certUri ->
+            // Both files selected, show alias/password dialog
+            val privateKeyFile = copyUriToCacheFile(context, privateKeyUri!!, "private_key")
+            val certificateFile = copyUriToCacheFile(context, certUri, "certificate")
+            if (privateKeyFile != null && certificateFile != null) {
+                // Store files and show dialog for alias/password
+                pendingImportAction = LabSettingsAction.LabImportSigningKey(
+                    privateKeyFile = privateKeyFile,
+                    certificateFile = certificateFile,
+                    alias = "installerx_apk_signing_key",
+                    password = null,
+                )
+                importAlias = "installerx_apk_signing_key"
+                importPassword = ""
+                showImportKeyDialog = true
+            } else {
+                context.toast(R.string.lab_signing_key_import_failed, "Failed to read files")
+            }
+        }
+    }
+    val pickPrivateKey = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            privateKeyUri = it
+            // Now pick certificate
+            pickCertificate.launch(arrayOf("application/x-pem-file", "application/x-x509-ca-cert", "application/pkix-cert", "application/octet-stream"))
+        }
+    }
+    val pickPkcs12 = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            val pkcs12File = copyUriToCacheFile(context, it, "keystore")
+            if (pkcs12File != null) {
+                pendingImportAction = LabSettingsAction.LabImportPkcs12(
+                    pkcs12File = pkcs12File,
+                    password = "",
+                    alias = "installerx_apk_signing_key",
+                )
+                importAlias = "installerx_apk_signing_key"
+                importPassword = ""
+                showImportPkcs12Dialog = true
+            } else {
+                context.toast(R.string.lab_signing_key_import_failed, "Failed to read file")
+            }
+        }
+    }
+
+    // File picker for keystore files (JKS, BKS, PKCS12)
+    val pickKeyStore = rememberLauncherForActivityResult<Array<String>, android.net.Uri?>(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            keyStoreFileUri = it
+            // Show the keystore import dialog with the selected file
+            showImportKeyStoreDialog = true
+        }
+    }
 
     if (showNonAdbConfirmation) {
         AlertDialog(
@@ -130,6 +218,71 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                 // 2. Enable the flash module feature
                 viewModel.dispatch(LabSettingsAction.LabChangeRootModuleFlash(true))
             },
+        )
+    }
+
+    // Keystore Import Dialog (AppManagerNG style)
+    if (showImportKeyStoreDialog) {
+        KeyStoreImportDialog(
+            onDismiss = { showImportKeyStoreDialog = false },
+            onTypeChange = { keyStoreType = it },
+            onFileClick = { pickKeyStore.launch(arrayOf("application/*")) },
+            onConfirm = {
+                keyStoreFileUri?.let { uri ->
+                    val file = copyUriToCacheFile(context, uri, "keystore")
+                    if (file != null) {
+                        keyStorePendingPassword = keyStorePassword
+                        pendingKeyStoreImport = file to keyStoreType
+                        loadKeyStoreAliases(
+                            context = context,
+                            file = file,
+                            keyType = keyStoreType,
+                            password = keyStorePassword,
+                            onResult = { aliases ->
+                                keyStoreAliases = aliases
+                                if (aliases.isEmpty()) {
+                                    context.toast(R.string.lab_found_no_alias_in_keystore, "No key entries found")
+                                } else {
+                                    showKeyStoreAliasDialog = true
+                                }
+                            },
+                            onError = { error ->
+                                context.toast(R.string.lab_failed_to_read_keystore, error)
+                            }
+                        )
+                    } else {
+                        context.toast(R.string.lab_failed_to_read_keystore, "Failed to read file")
+                    }
+                }
+            },
+            keyStoreType = keyStoreType,
+            keyStorePassword = keyStorePassword,
+            onPasswordChange = { keyStorePassword = it },
+            onFileSelected = { keyStoreFileUri != null },
+            stringResource = { stringResource(it) },
+        )
+    }
+
+    // Alias Selection Dialog
+    if (showKeyStoreAliasDialog) {
+        KeyStoreAliasDialog(
+            onDismiss = { showKeyStoreAliasDialog = false },
+            aliases = keyStoreAliases,
+            onConfirm = { alias, keyPassword ->
+                pendingKeyStoreImport?.let { (file, type) ->
+                    viewModel.dispatch(LabSettingsAction.LabImportKeyStore(
+                        keyStoreFile = file,
+                        keyStorePassword = keyStorePendingPassword,
+                        keyType = type,
+                        alias = alias,
+                        keyPassword = keyPassword.ifEmpty { null },
+                    ))
+                }
+                keyStoreAliases = emptyList()
+                keyStorePendingPassword = ""
+                pendingKeyStoreImport = null
+            },
+            stringResource = { stringResource(it) },
         )
     }
 
@@ -311,6 +464,131 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                     }
                 }
             }
+            // APK Signing section
+            item {
+                SegmentedColumn(
+                    title = stringResource(R.string.lab_apk_signing),
+                ) {
+                    item {
+                        SwitchWidget(
+                            icon = AppIcons.Sign,
+                            title = stringResource(R.string.lab_enable_apk_signing),
+                            description = stringResource(R.string.lab_enable_apk_signing_desc),
+                            checked = uiState.labEnableApkSigning,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeEnableApkSigning(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Sign,
+                            title = stringResource(R.string.lab_signing_v1_scheme),
+                            description = stringResource(R.string.lab_signing_v1_scheme_desc),
+                            checked = uiState.labSigningV1Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV1Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Sign,
+                            title = stringResource(R.string.lab_signing_v2_scheme),
+                            description = stringResource(R.string.lab_signing_v2_scheme_desc),
+                            checked = uiState.labSigningV2Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV2Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Sign,
+                            title = stringResource(R.string.lab_signing_v3_scheme),
+                            description = stringResource(R.string.lab_signing_v3_scheme_desc),
+                            checked = uiState.labSigningV3Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV3Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Sign,
+                            title = stringResource(R.string.lab_signing_v4_scheme),
+                            description = stringResource(R.string.lab_signing_v4_scheme_desc),
+                            checked = uiState.labSigningV4Scheme,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningV4Scheme(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        SwitchWidget(
+                            icon = AppIcons.Sign,
+                            title = stringResource(R.string.lab_signing_zip_align),
+                            description = stringResource(R.string.lab_signing_zip_align_desc),
+                            checked = uiState.labSigningZipAlign,
+                            onCheckedChange = {
+                                viewModel.dispatch(
+                                    LabSettingsAction.LabChangeSigningZipAlign(it),
+                                )
+                            },
+                        )
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        BaseWidget(
+                            icon = AppIcons.Import,
+                            title = stringResource(R.string.lab_import_signing_key),
+                            description = stringResource(R.string.lab_import_signing_key_desc),
+                            onClick = {
+                                pickPrivateKey.launch(arrayOf("application/octet-stream", "application/x-pkcs8", "application/pkcs8", "text/plain", "application/pem"))
+                            },
+                        ) {}
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        BaseWidget(
+                            icon = AppIcons.Import,
+                            title = stringResource(R.string.lab_import_pkcs12),
+                            description = stringResource(R.string.lab_import_pkcs12_desc),
+                            onClick = {
+                                pickPkcs12.launch(arrayOf("application/x-pkcs12", "application/pkcs12", "application/octet-stream"))
+                            },
+                        ) {}
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning) {
+                        BaseWidget(
+                            icon = AppIcons.Import,
+                            title = stringResource(R.string.lab_import_keystore),
+                            description = stringResource(R.string.lab_import_keystore_desc),
+                            onClick = {
+                                pickKeyStore.launch(arrayOf("application/*"))
+                            },
+                        ) {}
+                    }
+                    item(animatedVisibility = uiState.labEnableApkSigning && hasCustomKey) {
+                        BaseWidget(
+                            icon = AppIcons.Delete,
+                            title = stringResource(R.string.lab_clear_imported_key),
+                            description = stringResource(R.string.lab_clear_imported_key_desc),
+                            onClick = {
+                                viewModel.dispatch(LabSettingsAction.LabClearImportedKey)
+                            },
+                        ) {}
+                    }
+                }
+            }
         }
     }
 
@@ -332,6 +610,21 @@ fun LabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewModel())
                 },
             )
         }
+    }
+}
+
+// Helper function to copy URI content to a cache file
+private fun copyUriToCacheFile(context: Context, uri: android.net.Uri, prefix: String): java.io.File? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val cacheFile = java.io.File(context.cacheDir, "${prefix}_${System.currentTimeMillis()}.tmp")
+        val outputStream = java.io.FileOutputStream(cacheFile)
+        inputStream.copyTo(outputStream)
+        outputStream.close()
+        inputStream.close()
+        cacheFile
+    } catch (e: Exception) {
+        null
     }
 }
 

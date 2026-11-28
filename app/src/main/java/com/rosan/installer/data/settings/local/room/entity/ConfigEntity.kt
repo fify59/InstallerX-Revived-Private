@@ -93,6 +93,19 @@ data class ConfigEntity(
     var apkChooseAll: Boolean = false,
     @ColumnInfo(name = "require_biometric_auth", defaultValue = "0")
     var requireBiometricAuth: Boolean = false,
+    // APK Signing fields
+    @ColumnInfo(name = "enable_apk_signing", defaultValue = "0")
+    var enableApkSigning: Boolean = false,
+    @ColumnInfo(name = "signing_v1_scheme", defaultValue = "1")
+    var signingV1Scheme: Boolean = true,
+    @ColumnInfo(name = "signing_v2_scheme", defaultValue = "1")
+    var signingV2Scheme: Boolean = true,
+    @ColumnInfo(name = "signing_v3_scheme", defaultValue = "1")
+    var signingV3Scheme: Boolean = true,
+    @ColumnInfo(name = "signing_v4_scheme", defaultValue = "0")
+    var signingV4Scheme: Boolean = false,
+    @ColumnInfo(name = "signing_zip_align", defaultValue = "1")
+    var signingZipAlign: Boolean = true,
     @ColumnInfo(name = "created_at")
     var createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "modified_at")

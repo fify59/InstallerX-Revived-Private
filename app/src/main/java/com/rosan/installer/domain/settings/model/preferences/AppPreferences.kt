@@ -79,6 +79,13 @@ data class AppPreferences(
     val labEnableAbiOverride: Boolean,
     val labTryDifferentArchitecture: Boolean,
     val enableFileLogging: Boolean,
+    // APK Signing Settings
+    val labEnableApkSigning: Boolean,
+    val labSigningV1Scheme: Boolean,
+    val labSigningV2Scheme: Boolean,
+    val labSigningV3Scheme: Boolean,
+    val labSigningV4Scheme: Boolean,
+    val labSigningZipAlign: Boolean,
     // Theme Settings
     val themeMode: ThemeMode,
     val useAmoled: Boolean,

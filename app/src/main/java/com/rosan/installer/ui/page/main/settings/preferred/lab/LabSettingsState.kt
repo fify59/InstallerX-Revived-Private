@@ -16,4 +16,11 @@ data class LabSettingsState(
     val labTryDifferentArchitecture: Boolean = false,
     val tryMultipleAuthorizersOnInstall: Boolean = false,
     val smartAuthorizerCandidates: List<SmartAuthorizerCandidate> = emptyList(),
+    // APK Signing settings
+    val labEnableApkSigning: Boolean = false,
+    val labSigningV1Scheme: Boolean = true,
+    val labSigningV2Scheme: Boolean = true,
+    val labSigningV3Scheme: Boolean = true,
+    val labSigningV4Scheme: Boolean = false,
+    val labSigningZipAlign: Boolean = true,
 )

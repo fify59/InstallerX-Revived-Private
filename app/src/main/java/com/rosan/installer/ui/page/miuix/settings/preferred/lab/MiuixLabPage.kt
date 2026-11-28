@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rosan.installer.R
 import com.rosan.installer.core.env.AppConfig
+import com.rosan.installer.data.engine.signature.SigningKeyManager
 import com.rosan.installer.domain.device.model.ShizukuMode
 import com.rosan.installer.domain.device.provider.DeviceCapabilityProvider
 import com.rosan.installer.domain.settings.model.config.Authorizer
@@ -134,9 +135,7 @@ fun MiuixLabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewMod
         showState = showRootImplementationDialog,
         onDismiss = { showRootImplementationDialog.value = false },
         onConfirm = { selectedImplementation ->
-            // When the user confirms, dismiss the dialog.
             showRootImplementationDialog.value = false
-            // Dispatch actions to update the root implementation AND enable the flashing feature.
             viewModel.dispatch(LabSettingsAction.LabChangeRootImplementation(selectedImplementation))
             viewModel.dispatch(LabSettingsAction.LabChangeRootModuleFlash(true))
         },
@@ -344,6 +343,72 @@ fun MiuixLabPage(useBlur: Boolean, viewModel: LabSettingsViewModel = koinViewMod
                                     )
                                 },
                             )
+                        }
+                    }
+                }
+                // APK Signing section
+                item { SmallTitle(stringResource(R.string.lab_apk_signing)) }
+                item {
+                    Card(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 12.dp),
+                    ) {
+                        MiuixSwitchWidget(
+                            title = stringResource(R.string.lab_enable_apk_signing),
+                            description = stringResource(R.string.lab_enable_apk_signing_desc),
+                            checked = uiState.labEnableApkSigning,
+                            onCheckedChange = {
+                                viewModel.dispatch(LabSettingsAction.LabChangeEnableApkSigning(it))
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = uiState.labEnableApkSigning,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column {
+                                MiuixSwitchWidget(
+                                    title = stringResource(R.string.lab_signing_v1_scheme),
+                                    description = stringResource(R.string.lab_signing_v1_scheme_desc),
+                                    checked = uiState.labSigningV1Scheme,
+                                    onCheckedChange = {
+                                        viewModel.dispatch(LabSettingsAction.LabChangeSigningV1Scheme(it))
+                                    },
+                                )
+                                MiuixSwitchWidget(
+                                    title = stringResource(R.string.lab_signing_v2_scheme),
+                                    description = stringResource(R.string.lab_signing_v2_scheme_desc),
+                                    checked = uiState.labSigningV2Scheme,
+                                    onCheckedChange = {
+                                        viewModel.dispatch(LabSettingsAction.LabChangeSigningV2Scheme(it))
+                                    },
+                                )
+                                MiuixSwitchWidget(
+                                    title = stringResource(R.string.lab_signing_v3_scheme),
+                                    description = stringResource(R.string.lab_signing_v3_scheme_desc),
+                                    checked = uiState.labSigningV3Scheme,
+                                    onCheckedChange = {
+                                        viewModel.dispatch(LabSettingsAction.LabChangeSigningV3Scheme(it))
+                                    },
+                                )
+                                MiuixSwitchWidget(
+                                    title = stringResource(R.string.lab_signing_v4_scheme),
+                                    description = stringResource(R.string.lab_signing_v4_scheme_desc),
+                                    checked = uiState.labSigningV4Scheme,
+                                    onCheckedChange = {
+                                        viewModel.dispatch(LabSettingsAction.LabChangeSigningV4Scheme(it))
+                                    },
+                                )
+                                MiuixSwitchWidget(
+                                    title = stringResource(R.string.lab_signing_zip_align),
+                                    description = stringResource(R.string.lab_signing_zip_align_desc),
+                                    checked = uiState.labSigningZipAlign,
+                                    onCheckedChange = {
+                                        viewModel.dispatch(LabSettingsAction.LabChangeSigningZipAlign(it))
+                                    },
+                                )
+                            }
                         }
                     }
                 }

@@ -2,20 +2,30 @@
 // Copyright (C) 2025-2026 InstallerX Revived contributors
 package com.rosan.installer.ui.page.main.settings.preferred.lab
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rosan.installer.R
+import com.rosan.installer.data.engine.signature.SigningKeyManager
 import com.rosan.installer.domain.settings.model.preferences.SmartAuthorizerPreferences
 import com.rosan.installer.domain.settings.repository.AppSettingsRepository
 import com.rosan.installer.domain.settings.repository.BooleanSetting
 import com.rosan.installer.domain.settings.repository.StringSetting
 import com.rosan.installer.domain.settings.usecase.settings.UpdateSettingUseCase
+import com.rosan.installer.util.toast
+import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
-class LabSettingsViewModel(appSettingsRepo: AppSettingsRepository, private val updateSetting: UpdateSettingUseCase) : ViewModel() {
+class LabSettingsViewModel(
+    appSettingsRepo: AppSettingsRepository,
+    private val updateSetting: UpdateSettingUseCase,
+    private val context: Context,
+) : ViewModel() {
 
     val state: StateFlow<LabSettingsState> = appSettingsRepo.preferencesFlow.map { prefs ->
         LabSettingsState(
@@ -29,6 +39,13 @@ class LabSettingsViewModel(appSettingsRepo: AppSettingsRepository, private val u
             labTryDifferentArchitecture = prefs.labTryDifferentArchitecture,
             tryMultipleAuthorizersOnInstall = prefs.tryMultipleAuthorizersOnInstall,
             smartAuthorizerCandidates = prefs.smartAuthorizerCandidates,
+            // APK Signing settings
+            labEnableApkSigning = prefs.labEnableApkSigning,
+            labSigningV1Scheme = prefs.labSigningV1Scheme,
+            labSigningV2Scheme = prefs.labSigningV2Scheme,
+            labSigningV3Scheme = prefs.labSigningV3Scheme,
+            labSigningV4Scheme = prefs.labSigningV4Scheme,
+            labSigningZipAlign = prefs.labSigningZipAlign,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -103,6 +120,118 @@ class LabSettingsViewModel(appSettingsRepo: AppSettingsRepository, private val u
                     StringSetting.SmartAuthorizerCandidates,
                     SmartAuthorizerPreferences.encode(action.candidates),
                 )
+            }
+
+            // APK Signing actions
+            is LabSettingsAction.LabChangeEnableApkSigning -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabEnableApkSigning,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV1Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV1Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV2Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV2Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV3Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV3Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningV4Scheme -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningV4Scheme,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabChangeSigningZipAlign -> viewModelScope.launch {
+                updateSetting(
+                    BooleanSetting.LabSigningZipAlign,
+                    action.enable,
+                )
+            }
+
+            is LabSettingsAction.LabImportSigningKey -> viewModelScope.launch {
+                try {
+                    SigningKeyManager.importKeyPair(
+                        context,
+                        action.privateKeyFile,
+                        action.certificateFile,
+                        action.alias,
+                        action.password,
+                    )
+                    context.toast(R.string.lab_signing_key_imported_success, action.alias)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to import signing key")
+                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
+                }
+            }
+
+            is LabSettingsAction.LabImportPkcs12 -> viewModelScope.launch {
+                try {
+                    SigningKeyManager.importFromPkcs12(
+                        context,
+                        action.pkcs12File,
+                        action.password,
+                        action.alias,
+                    )
+                    context.toast(R.string.lab_signing_key_imported_success, action.alias)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to import PKCS#12 keystore")
+                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
+                }
+            }
+
+            // AppManagerNG-style keystore import (JKS, BKS, PKCS12)
+            is LabSettingsAction.LabImportKeyStore -> viewModelScope.launch {
+                try {
+                    when (action.keyType) {
+                        0 -> SigningKeyManager.importFromJks(
+                            context,
+                            action.keyStoreFile,
+                            action.keyStorePassword,
+                            action.alias,
+                            action.keyPassword,
+                        )
+                        1 -> SigningKeyManager.importFromPkcs12(
+                            context,
+                            action.keyStoreFile,
+                            action.keyStorePassword,
+                            action.alias ?: "installerx_apk_signing_key",
+                        )
+                        2 -> SigningKeyManager.importFromBks(
+                            context,
+                            action.keyStoreFile,
+                            action.keyStorePassword,
+                            action.alias,
+                            action.keyPassword,
+                        )
+                        else -> throw IllegalArgumentException("Unsupported key type: ${action.keyType}")
+                    }
+                    context.toast(R.string.lab_signing_key_imported_success, action.alias ?: "installerx_apk_signing_key")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to import keystore")
+                    context.toast(R.string.lab_signing_key_import_failed, e.message ?: "")
+                }
+            }
+
+            is LabSettingsAction.LabClearImportedKey -> {
+                SigningKeyManager.clearImportedKey()
+                context.toast(R.string.lab_signing_key_cleared)
             }
         }
     }

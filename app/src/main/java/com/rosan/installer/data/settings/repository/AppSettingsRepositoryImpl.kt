@@ -152,6 +152,12 @@ class AppSettingsRepositoryImpl(
             labShizukuNonAdbInstall = prefs[AppDataStore.LAB_SHIZUKU_NON_ADB_INSTALL] ?: false,
             labEnableAbiOverride = prefs[AppDataStore.LAB_ENABLE_ABI_OVERRIDE] ?: false,
             labTryDifferentArchitecture = prefs[AppDataStore.LAB_TRY_DIFFERENT_ARCHITECTURE] ?: false,
+            labEnableApkSigning = prefs[AppDataStore.LAB_ENABLE_APK_SIGNING] ?: false,
+            labSigningV1Scheme = prefs[AppDataStore.LAB_SIGNING_V1_SCHEME] ?: true,
+            labSigningV2Scheme = prefs[AppDataStore.LAB_SIGNING_V2_SCHEME] ?: true,
+            labSigningV3Scheme = prefs[AppDataStore.LAB_SIGNING_V3_SCHEME] ?: true,
+            labSigningV4Scheme = prefs[AppDataStore.LAB_SIGNING_V4_SCHEME] ?: false,
+            labSigningZipAlign = prefs[AppDataStore.LAB_SIGNING_ZIP_ALIGN] ?: true,
             enableFileLogging = prefs[AppDataStore.ENABLE_FILE_LOGGING] ?: true,
             // UI State
             themeMode = ThemeMode.fromValueOrDefault(prefs[AppDataStore.THEME_MODE] ?: ThemeMode.SYSTEM.name),
@@ -371,6 +377,18 @@ class AppSettingsRepositoryImpl(
         BooleanSetting.QuickOpenLSPosed -> AppDataStore.QUICK_OPEN_LSPOSED
 
         BooleanSetting.EnableFileLogging -> AppDataStore.ENABLE_FILE_LOGGING
+
+        BooleanSetting.LabEnableApkSigning -> AppDataStore.LAB_ENABLE_APK_SIGNING
+
+        BooleanSetting.LabSigningV1Scheme -> AppDataStore.LAB_SIGNING_V1_SCHEME
+
+        BooleanSetting.LabSigningV2Scheme -> AppDataStore.LAB_SIGNING_V2_SCHEME
+
+        BooleanSetting.LabSigningV3Scheme -> AppDataStore.LAB_SIGNING_V3_SCHEME
+
+        BooleanSetting.LabSigningV4Scheme -> AppDataStore.LAB_SIGNING_V4_SCHEME
+
+        BooleanSetting.LabSigningZipAlign -> AppDataStore.LAB_SIGNING_ZIP_ALIGN
     }
 
     private fun namedPackageListKey(setting: NamedPackageListSetting): Preferences.Key<String> = when (setting) {

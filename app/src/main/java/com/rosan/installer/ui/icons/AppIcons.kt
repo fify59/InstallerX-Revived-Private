@@ -244,4 +244,6 @@ object AppIcons {
 
     // Lab Icons
     val InstallRequester = Icons.AutoMirrored.TwoTone.FactCheck
+    val Sign = Icons.TwoTone.Security
+    val Import = Icons.TwoTone.CloudDownload
 }
